@@ -29,20 +29,18 @@ bin/
 ### Mac OS ###
 .DS_Store
 
-# Loại bỏ file cấu hình riêng lẻ của IntelliJ
+
 *.iml
 
-# Loại bỏ các folder build đặc thù trong hình của bạn
+
 /bin/
 /out/
 
-# Loại bỏ file danh sách nguồn (thường sinh ra khi compile thủ công)
+
 sources.txt
 
-# Nếu bạn có dùng Log hoặc file tạm
 *.log
 
-# Java & IDE
 .idea/
 *.iml
 out/
@@ -50,10 +48,10 @@ bin/
 sources.txt
 .DS_Store
 
-# VS Code
+
 .vscode/
 
-# Nếu sau này có dùng Maven/Gradle thì thêm:
-# target/
-# .gradle/
-# build/
+
+target/
+.gradle/
+build/

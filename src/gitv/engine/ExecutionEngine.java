@@ -21,7 +21,10 @@ public class ExecutionEngine {
     }
 
     public WorkflowResult execute(List<ActionType> initialActions, RepoContext repoContext) {
+        ExecutionLogger logger = new ExecutionLogger(System.getProperty("gitv.debug") != null);
+
         if (initialActions == null || initialActions.isEmpty() || (initialActions.size() == 1 && initialActions.get(0) == ActionType.NONE)) {
+            logger.logFinalSummary(true, "No actions to execute.");
             return new WorkflowResult(true, "No actions to execute.");
         }
 
@@ -34,7 +37,10 @@ public class ExecutionEngine {
             
             Workflow workflow = registry.getWorkflow(action);
             if (workflow == null) {
-                return new WorkflowResult(false, "Unknown action: " + action);
+                WorkflowResult result = new WorkflowResult(false, "Unknown action: " + action);
+                logger.logFailure(action, FailureType.FATAL, result.getMessage());
+                logger.logFinalSummary(false, result.getMessage());
+                return result;
             }
 
             int count = context.getExecutionCount().getOrDefault(action, 0) + 1;
@@ -42,24 +48,28 @@ public class ExecutionEngine {
 
             if (count > MAX_RETRY) {
                 String error = "Max retries exceeded for action: " + action;
-                System.out.println("[EXEC] " + action + " -> FATAL -> STOP (" + error + ")");
+                logger.logFailure(action, FailureType.FATAL, error);
                 context.getHistory().add(new ExecutionRecord(action, false, FailureType.FATAL, error));
-                return new WorkflowResult(false, error, false, null, FailureType.FATAL);
+                WorkflowResult result = new WorkflowResult(false, error, false, null, FailureType.FATAL);
+                logger.logFinalSummary(false, error);
+                return result;
             }
 
-            System.out.println("[EXEC] " + action + " -> START");
+            logger.logStart(action);
             context.clearStepData();
             WorkflowResult result = workflow.execute(context);
             context.getHistory().add(new ExecutionRecord(action, result.isSuccess(), result.getFailureType(), result.getMessage()));
 
             if (result.isSuccess()) {
-                System.out.println("[EXEC] " + action + " -> SUCCESS");
+                logger.logSuccess(action, result.getMessage());
                 context.getExecutedActions().add(action);
             } else {
                 FailureType failureType = result.getFailureType();
+                logger.logFailure(action, failureType, result.getMessage());
+
                 if (failureType == FailureType.TRANSIENT) {
                     long delay = BASE_DELAY_MS * (1L << (count - 1)) + random.nextInt(500);
-                    System.out.println("[EXEC] " + action + " -> RETRY #" + count + " after " + delay + "ms");
+                    logger.logRetry(action, count, delay);
                     try {
                         Thread.sleep(delay);
                     } catch (InterruptedException e) {
@@ -67,21 +77,25 @@ public class ExecutionEngine {
                     }
                     queue.addFirst(action);
                 } else if (failureType == FailureType.CONFLICT && result.getNextAction() != null) {
-                    System.out.println("[EXEC] " + action + " -> CONFLICT -> RECOVERY: " + result.getNextAction());
+                    logger.logRecoveryInjection(action, result.getNextAction());
                     queue.addFirst(action);
                     queue.addFirst(result.getNextAction());
                 } else if (failureType == FailureType.FATAL) {
                     if (result.isBlocking()) {
-                        System.out.println("[EXEC] " + action + " -> FATAL -> STOP");
+                        logger.logDebug("Fatal error is blocking, stopping execution.");
+                        logger.logFinalSummary(false, result.getMessage());
                         return result; 
                     } else {
-                        System.out.println("[EXEC] " + action + " -> FATAL (Non-blocking) -> CONTINUE");
+                        logger.logDebug("Fatal error is non-blocking, continuing execution.");
                     }
                 } else {
+                    logger.logFinalSummary(false, result.getMessage());
                     return result; // Stop execution on unhandled
                 }
             }
         }
+        
+        logger.logFinalSummary(true, "All actions executed successfully.");
         return new WorkflowResult(true, "All actions executed successfully.");
     }
 }
