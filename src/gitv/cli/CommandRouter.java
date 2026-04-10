@@ -2,27 +2,20 @@ package gitv.cli;
 
 import gitv.engine.ActionKey;
 import gitv.engine.ExecutionEngine;
-import gitv.suggestion.Suggestion;
-import gitv.suggestion.SuggestionEngine;
+import gitv.suggestion.DecisionEngine;
+import gitv.suggestion.ScoredAction;
 import gitv.git.ContextBuilder;
 import gitv.git.GitService;
 import gitv.git.RepoContext;
-import gitv.workflow.Workflow;
-import gitv.workflow.WorkflowRegistry;
 import gitv.workflow.WorkflowResult;
-import gitv.workflow.basic.CommitWorkflow;
-import gitv.workflow.basic.PullWorkflow;
-import gitv.workflow.basic.PushWorkflow;
-import gitv.workflow.composite.SyncWorkflow;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
 import java.util.Scanner;
 
 public class CommandRouter {
     private final Scanner scanner = new Scanner(System.in);
     private final ExecutionEngine executionEngine;
-    
+
     public CommandRouter(ExecutionEngine executionEngine) {
         this.executionEngine = executionEngine;
     }
@@ -44,45 +37,36 @@ public class CommandRouter {
                 ContextBuilder builder = new ContextBuilder();
                 RepoContext context = builder.build();
 
-                System.out.println("Branch: " + context.getBranch());
-                System.out.println("Changes: " + context.getChangedFiles() + " files");
+                System.out.println("Changes: " + context.hasChanges());
+                System.out.println("Unpushed Commits: " + context.hasUnpushedCommits());
 
-                SuggestionEngine engine = new SuggestionEngine();
-                Suggestion suggestion = engine.suggest(context);
-                System.out.println(suggestion.getMessage());
+                DecisionEngine engine = new DecisionEngine();
+                ScoredAction action = engine.decide(context);
+                
+                printExplanation(action);
                 break;
             }
             case "go": {
-                SuggestionEngine engine = new SuggestionEngine();
+                DecisionEngine engine = new DecisionEngine();
                 GitService git = new GitService();
                 if (!git.isGitRepository()) {
                     System.out.println("❌ Not a git repository");
                     break;
                 }
 
-
-
                 ContextBuilder builder = new ContextBuilder();
                 RepoContext context = builder.build();
 
-                Suggestion suggestion = engine.suggest(context);
-                System.out.println(suggestion.getMessage());
+                ScoredAction action = engine.decide(context);
+                printExplanation(action);
 
-                List<ActionKey> actions = suggestion.getActions();
-                if (actions != null && !actions.isEmpty()
-                        && !(actions.size() == 1 && actions.get(0) == ActionKey.NONE)) {
-                    boolean proceed = true;
-                    if (suggestion.requiresConfirmation()) {
-                        System.out.print(suggestion.getConfirmationMessage());
-                        String answer = scanner.nextLine();
-                        if (!answer.trim().equalsIgnoreCase("y")) {
-                            proceed = false;
-                            System.out.println("Aborted.");
-                        }
-                    }
-
-                    if (proceed) {
-                        WorkflowResult result = executionEngine.execute(actions, context);
+                if (action.getType() != ActionKey.NONE) {
+                    System.out.print("Do you want to run the recommended command? (y/n) ");
+                    String answer = scanner.nextLine();
+                    if (!answer.trim().equalsIgnoreCase("y")) {
+                        System.out.println("Aborted.");
+                    } else {
+                        WorkflowResult result = executionEngine.execute(Collections.singletonList(action.getType()), context);
                         if (result.isSuccess()) {
                             System.out.println("✅ " + result.getMessage());
                         } else {
@@ -94,6 +78,15 @@ public class CommandRouter {
             }
             default:
                 System.out.println("Unknown command");
+        }
+    }
+
+    private void printExplanation(ScoredAction action) {
+        System.out.println("Recommended: " + action.getType().toString());
+        System.out.println("Score: " + action.getScore());
+        System.out.println("Reasons:");
+        for (String reason : action.getReasons()) {
+            System.out.println("* " + reason);
         }
     }
 }
