@@ -1,15 +1,15 @@
 package gitv.suggestion;
 
-import gitv.engine.ActionType;
+import gitv.engine.ActionKey;
 import java.util.List;
 
 public class Suggestion {
     private final String message;
-    private final List<ActionType> actions;
+    private final List<ActionKey> actions;
     private final boolean requiresConfirmation;
     private final String confirmationMessage;
 
-    public Suggestion(String message, List<ActionType> actions, boolean requiresConfirmation, String confirmationMessage) {
+    public Suggestion(String message, List<ActionKey> actions, boolean requiresConfirmation, String confirmationMessage) {
         this.message = message;
         this.actions = actions;
         this.requiresConfirmation = requiresConfirmation;
@@ -20,7 +20,7 @@ public class Suggestion {
         return message;
     }
 
-    public List<ActionType> getActions() {
+    public List<ActionKey> getActions() {
         return actions;
     }
 

@@ -1,6 +1,6 @@
 package gitv.suggestion;
 
-import gitv.engine.ActionType;
+import gitv.engine.ActionKey;
 import gitv.git.RepoContext;
 import java.util.Collections;
 
@@ -10,9 +10,9 @@ public class SuggestionEngine {
         if (changedFiles == 0) {
             return new Suggestion("✅ Working tree clean", Collections.emptyList(), false, "");
         } else if (changedFiles <= 5) {
-            return new Suggestion("⚠️ You have " + changedFiles + " changes\n👉 Safe to commit", Collections.singletonList(ActionType.COMMIT), true, "Do you want to run suggested command? (y/n) ");
+            return new Suggestion("⚠️ You have " + changedFiles + " changes\n👉 Safe to commit", Collections.singletonList(ActionKey.COMMIT), true, "Do you want to run suggested command? (y/n) ");
         } else {
-            return new Suggestion("⚠️ You have many changes (" + changedFiles + " files)\n👉 Consider reviewing", Collections.singletonList(ActionType.COMMIT), true, "You have many changes. Are you sure? (y/n) ");
+            return new Suggestion("⚠️ You have many changes (" + changedFiles + " files)\n👉 Consider reviewing", Collections.singletonList(ActionKey.COMMIT), true, "You have many changes. Are you sure? (y/n) ");
         }
     }
 }
