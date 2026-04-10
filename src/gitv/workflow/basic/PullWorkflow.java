@@ -1,6 +1,6 @@
 package gitv.workflow.basic;
 
-import gitv.engine.ActionType;
+import gitv.engine.ActionKey;
 import gitv.engine.ExecutionContext;
 import gitv.engine.FailureType;
 import gitv.git.GitService;
@@ -14,10 +14,7 @@ public class PullWorkflow implements Workflow {
         this.gitService = gitService;
     }
 
-    @Override
-    public ActionType getType() {
-        return ActionType.PULL;
-    }
+
 
     @Override
     public WorkflowResult execute(ExecutionContext context) {

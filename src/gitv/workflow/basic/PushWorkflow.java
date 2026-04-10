@@ -1,6 +1,6 @@
 package gitv.workflow.basic;
 
-import gitv.engine.ActionType;
+import gitv.engine.ActionKey;
 import gitv.engine.ExecutionContext;
 import gitv.engine.FailureType;
 import gitv.git.GitService;
@@ -14,10 +14,7 @@ public class PushWorkflow implements Workflow {
         this.gitService = gitService;
     }
 
-    @Override
-    public ActionType getType() {
-        return ActionType.PUSH;
-    }
+
 
     @Override
     public WorkflowResult execute(ExecutionContext context) {
@@ -29,7 +26,7 @@ public class PushWorkflow implements Workflow {
         if (success) {
             return new WorkflowResult(true, "Push successful.", false, null, FailureType.NONE);
         } else {
-            return new WorkflowResult(false, "Push failed. Remote may have changes.", true, ActionType.PULL, FailureType.CONFLICT);
+            return new WorkflowResult(false, "Push failed. Remote may have changes.", true, ActionKey.PULL, FailureType.CONFLICT);
         }
     }
 }

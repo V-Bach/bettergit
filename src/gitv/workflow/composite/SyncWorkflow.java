@@ -1,6 +1,6 @@
 package gitv.workflow.composite;
 
-import gitv.engine.ActionType;
+import gitv.engine.ActionKey;
 import gitv.engine.ExecutionContext;
 import gitv.engine.FailureType;
 import gitv.git.GitService;
@@ -14,10 +14,7 @@ public class SyncWorkflow implements Workflow {
         this.gitService = gitService;
     }
 
-    @Override
-    public ActionType getType() {
-        return ActionType.SYNC;
-    }
+
 
     @Override
     public WorkflowResult execute(ExecutionContext context) {
@@ -33,7 +30,7 @@ public class SyncWorkflow implements Workflow {
         if (pushSuccess) {
             return new WorkflowResult(true, "Sync successful.", false, null, FailureType.NONE);
         } else {
-            return new WorkflowResult(false, "Sync failed during push. Remote may have changes.", true, ActionType.PULL, FailureType.CONFLICT);
+            return new WorkflowResult(false, "Sync failed during push. Remote may have changes.", true, ActionKey.PULL, FailureType.CONFLICT);
         }
     }
 }

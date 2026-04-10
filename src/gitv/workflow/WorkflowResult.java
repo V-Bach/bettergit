@@ -1,13 +1,13 @@
 package gitv.workflow;
 
-import gitv.engine.ActionType;
+import gitv.engine.ActionKey;
 import gitv.engine.FailureType;
 
 public class WorkflowResult {
     private final boolean success;
     private final String message;
     private final boolean retryable;
-    private final ActionType nextAction;
+    private final ActionKey nextAction;
     private final FailureType failureType;
     private final boolean blocking;
 
@@ -15,15 +15,15 @@ public class WorkflowResult {
         this(success, message, false, null, success ? FailureType.NONE : FailureType.FATAL);
     }
 
-    public WorkflowResult(boolean success, String message, boolean retryable, ActionType nextAction) {
+    public WorkflowResult(boolean success, String message, boolean retryable, ActionKey nextAction) {
         this(success, message, retryable, nextAction, success ? FailureType.NONE : (retryable ? FailureType.TRANSIENT : FailureType.FATAL));
     }
 
-    public WorkflowResult(boolean success, String message, boolean retryable, ActionType nextAction, FailureType failureType) {
+    public WorkflowResult(boolean success, String message, boolean retryable, ActionKey nextAction, FailureType failureType) {
         this(success, message, retryable, nextAction, failureType, true); // default blocking = true
     }
 
-    public WorkflowResult(boolean success, String message, boolean retryable, ActionType nextAction, FailureType failureType, boolean blocking) {
+    public WorkflowResult(boolean success, String message, boolean retryable, ActionKey nextAction, FailureType failureType, boolean blocking) {
         this.success = success;
         this.message = message;
         this.retryable = retryable;
@@ -44,7 +44,7 @@ public class WorkflowResult {
         return retryable;
     }
 
-    public ActionType getNextAction() {
+    public ActionKey getNextAction() {
         return nextAction;
     }
 
