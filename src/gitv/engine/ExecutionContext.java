@@ -9,10 +9,10 @@ import java.util.Map;
 
 public class ExecutionContext {
     private final RepoContext repoContext;
-    private final List<ActionType> executedActions;
+    private final List<ActionKey> executedActions;
     private final Map<String, Object> sharedData;
     private final Map<String, Object> stepData;
-    private final Map<ActionType, Integer> executionCount;
+    private final Map<ActionKey, Integer> executionCount;
     private final List<ExecutionRecord> history;
 
     public ExecutionContext(RepoContext repoContext) {
@@ -28,7 +28,7 @@ public class ExecutionContext {
         return repoContext;
     }
 
-    public List<ActionType> getExecutedActions() {
+    public List<ActionKey> getExecutedActions() {
         return executedActions;
     }
 
@@ -44,7 +44,7 @@ public class ExecutionContext {
         stepData.clear();
     }
 
-    public Map<ActionType, Integer> getExecutionCount() {
+    public Map<ActionKey, Integer> getExecutionCount() {
         return executionCount;
     }
 
