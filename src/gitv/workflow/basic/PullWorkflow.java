@@ -2,7 +2,7 @@ package gitv.workflow.basic;
 
 import gitv.engine.ActionKey;
 import gitv.engine.ExecutionContext;
-import gitv.engine.FailureType;
+import gitv.engine.FailureCategory;
 import gitv.git.GitService;
 import gitv.workflow.Workflow;
 import gitv.workflow.WorkflowResult;
@@ -22,9 +22,8 @@ public class PullWorkflow implements Workflow {
         return new WorkflowResult(
                 success, 
                 success ? "Pull successful." : "Pull failed. Retrying might help.", 
-                !success, 
                 null, 
-                success ? FailureType.NONE : FailureType.TRANSIENT
+                success ? FailureCategory.NONE : FailureCategory.RECOVERABLE_ERROR
         );
     }
 }

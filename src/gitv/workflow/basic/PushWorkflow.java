@@ -2,7 +2,7 @@ package gitv.workflow.basic;
 
 import gitv.engine.ActionKey;
 import gitv.engine.ExecutionContext;
-import gitv.engine.FailureType;
+import gitv.engine.FailureCategory;
 import gitv.git.GitService;
 import gitv.workflow.Workflow;
 import gitv.workflow.WorkflowResult;
@@ -19,14 +19,14 @@ public class PushWorkflow implements Workflow {
     @Override
     public WorkflowResult execute(ExecutionContext context) {
         if (gitService.hasMergeConflicts()) {
-            return new WorkflowResult(false, "Push failed. Repository has active merge conflicts.", false, null, FailureType.FATAL);
+            return new WorkflowResult(false, "Push failed. Repository has active merge conflicts.", null, FailureCategory.FATAL_ERROR);
         }
 
         boolean success = gitService.push();
         if (success) {
-            return new WorkflowResult(true, "Push successful.", false, null, FailureType.NONE);
+            return new WorkflowResult(true, "Push successful.");
         } else {
-            return new WorkflowResult(false, "Push failed. Remote may have changes.", true, ActionKey.PULL, FailureType.CONFLICT);
+            return new WorkflowResult(false, "Push failed. Remote may have changes.", ActionKey.PULL, FailureCategory.RECOVERABLE_ERROR);
         }
     }
 }

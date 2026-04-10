@@ -35,8 +35,8 @@ public class ExecutionLogger {
         }
     }
 
-    public void logFailure(ActionKey action, FailureType type, String message) {
-        String color = (type == FailureType.FATAL) ? RED : YELLOW;
+    public void logFailure(ActionKey action, FailureCategory type, String message) {
+        String color = (type == FailureCategory.FATAL_ERROR) ? RED : YELLOW;
         System.out.printf("   %s✗%s %s[%s]%s Failed: %s%n", color, RESET, color, type, RESET, message);
     }
 

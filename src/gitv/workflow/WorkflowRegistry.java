@@ -2,12 +2,14 @@ package gitv.workflow;
 
 import gitv.engine.ActionKey;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public class WorkflowRegistry {
-    private final Map<ActionKey, Workflow> registry = new HashMap<>();
-    private boolean locked = false;
+    private Map<ActionKey, Workflow> registry = new HashMap<>();
+    private Map<String, ActionKey> stringIndex = new HashMap<>();
+    private volatile boolean locked = false;
 
     public void register(ActionKey key, Workflow workflow) {
         if (locked) {
@@ -17,10 +19,16 @@ public class WorkflowRegistry {
             throw new IllegalArgumentException("Workflow already registered for key: " + key);
         }
         registry.put(key, workflow);
+        stringIndex.put(key.toString(), key);
     }
 
     public Workflow get(ActionKey key) {
         return registry.get(key);
+    }
+    
+    public ActionKey getByName(String name) {
+        if (name == null) return null;
+        return stringIndex.get(name.toUpperCase());
     }
 
     public boolean contains(ActionKey key) {
@@ -29,5 +37,7 @@ public class WorkflowRegistry {
 
     public void lock() {
         this.locked = true;
+        this.registry = Collections.unmodifiableMap(this.registry);
+        this.stringIndex = Collections.unmodifiableMap(this.stringIndex);
     }
 }

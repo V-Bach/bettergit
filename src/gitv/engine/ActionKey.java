@@ -4,12 +4,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class ActionKey {
     private static final ConcurrentHashMap<String, ActionKey> INTERN_POOL = new ConcurrentHashMap<>();
+    private static volatile boolean locked = false;
 
-    public static final ActionKey COMMIT = ActionKey.of("COMMIT");
-    public static final ActionKey PUSH = ActionKey.of("PUSH");
-    public static final ActionKey PULL = ActionKey.of("PULL");
-    public static final ActionKey SYNC = ActionKey.of("SYNC");
-    public static final ActionKey NONE = ActionKey.of("NONE");
+    public static final ActionKey COMMIT = ActionKey.ofUnsafe("COMMIT");
+    public static final ActionKey PUSH = ActionKey.ofUnsafe("PUSH");
+    public static final ActionKey PULL = ActionKey.ofUnsafe("PULL");
+    public static final ActionKey SYNC = ActionKey.ofUnsafe("SYNC");
+    public static final ActionKey NONE = ActionKey.ofUnsafe("NONE");
 
     private final String name;
 
@@ -17,7 +18,18 @@ public final class ActionKey {
         this.name = name;
     }
 
+    public static void lock() {
+        locked = true;
+    }
+
     public static ActionKey of(String name) {
+        if (locked) {
+            throw new IllegalStateException("ActionKey creation is locked");
+        }
+        return ofUnsafe(name);
+    }
+
+    private static ActionKey ofUnsafe(String name) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Action name cannot be empty");
         }
