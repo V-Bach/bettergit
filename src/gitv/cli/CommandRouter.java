@@ -1,6 +1,6 @@
 package gitv.cli;
 
-import gitv.engine.ActionType;
+import gitv.engine.ActionKey;
 import gitv.engine.ExecutionEngine;
 import gitv.suggestion.Suggestion;
 import gitv.suggestion.SuggestionEngine;
@@ -21,6 +21,11 @@ import java.util.Scanner;
 
 public class CommandRouter {
     private final Scanner scanner = new Scanner(System.in);
+    private final ExecutionEngine executionEngine;
+    
+    public CommandRouter(ExecutionEngine executionEngine) {
+        this.executionEngine = executionEngine;
+    }
 
     public void route(String[] args) {
         if (args.length == 0) {
@@ -55,14 +60,7 @@ public class CommandRouter {
                     break;
                 }
 
-                // Initialize execution system
-                List<Workflow> workflows = Arrays.asList(
-                        new CommitWorkflow(git),
-                        new PushWorkflow(git),
-                        new PullWorkflow(git),
-                        new SyncWorkflow(git));
-                WorkflowRegistry registry = new WorkflowRegistry(workflows);
-                ExecutionEngine executionEngine = new ExecutionEngine(registry);
+
 
                 ContextBuilder builder = new ContextBuilder();
                 RepoContext context = builder.build();
@@ -70,9 +68,9 @@ public class CommandRouter {
                 Suggestion suggestion = engine.suggest(context);
                 System.out.println(suggestion.getMessage());
 
-                List<ActionType> actions = suggestion.getActions();
+                List<ActionKey> actions = suggestion.getActions();
                 if (actions != null && !actions.isEmpty()
-                        && !(actions.size() == 1 && actions.get(0) == ActionType.NONE)) {
+                        && !(actions.size() == 1 && actions.get(0) == ActionKey.NONE)) {
                     boolean proceed = true;
                     if (suggestion.requiresConfirmation()) {
                         System.out.print(suggestion.getConfirmationMessage());
