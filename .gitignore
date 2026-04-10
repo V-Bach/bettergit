@@ -29,13 +29,10 @@ bin/
 ### Mac OS ###
 .DS_Store
 
-
 *.iml
-
 
 /bin/
 /out/
-
 
 sources.txt
 
@@ -48,10 +45,9 @@ bin/
 sources.txt
 .DS_Store
 
-
 .vscode/
-
 
 target/
 .gradle/
+
 build/
