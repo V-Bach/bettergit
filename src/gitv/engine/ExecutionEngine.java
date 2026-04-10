@@ -5,19 +5,29 @@ import gitv.workflow.Workflow;
 import gitv.workflow.WorkflowRegistry;
 import gitv.workflow.WorkflowResult;
 
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class ExecutionEngine {
     private final WorkflowRegistry registry;
-    private static final int MAX_RETRY = 3;
+    private final ExecutorService sandboxExecutor;
+    
+    private static final int MAX_TOTAL_STEPS = 50;
+    private static final int MAX_QUEUE_SIZE = 10;
     private static final long BASE_DELAY_MS = 1000;
+    private static final long MAX_ACTION_EXECUTION_TIME_MS = 1000;
+    private static final int MAX_PER_ACTION_EXECUTIONS = 5;
+    
     private final Random random = new Random();
 
     public ExecutionEngine(WorkflowRegistry registry) {
         this.registry = registry;
+        this.sandboxExecutor = new ThreadPoolExecutor(
+            4, 8,
+            60L, TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(100),
+            new ThreadPoolExecutor.AbortPolicy()
+        );
     }
 
     public WorkflowResult execute(List<ActionKey> initialActions, RepoContext repoContext) {
@@ -29,83 +39,161 @@ public class ExecutionEngine {
         }
 
         ExecutionContext context = new ExecutionContext(repoContext);
-        Deque<ActionKey> queue = new LinkedList<>(initialActions);
+        Deque<ActionKey> queue = new LinkedList<>();
+        Set<ActionKey> inQueue = new HashSet<>();
+        Map<ActionKey, Integer> executionCount = new HashMap<>();
+        Map<ActionKey, Integer> retryCount = new HashMap<>();
+
+        for (ActionKey key : initialActions) {
+            if (!safeEnqueue(queue, inQueue, key, false, logger)) {
+                return failSafely(logger, context, key, "Queue max size exceeded on initial enqueue");
+            }
+        }
+
+        int totalSteps = 0;
 
         while (!queue.isEmpty()) {
-            ActionKey action = queue.poll();
-            if (action == ActionKey.NONE) continue;
-            
-            Workflow workflow = registry.get(action);
-            if (workflow == null) {
-                WorkflowResult result = new WorkflowResult(false, "No workflow registered", false, null, FailureType.FATAL);
-                logger.logFailure(action, FailureType.FATAL, result.getMessage());
-                logger.logFinalSummary(false, result.getMessage());
-                return result;
+            if (++totalSteps > MAX_TOTAL_STEPS) {
+                return failSafely(logger, context, null, "Global execution step limit exceeded");
             }
 
-            int count = context.getExecutionCount().getOrDefault(action, 0) + 1;
-            context.getExecutionCount().put(action, count);
+            ActionKey action = queue.poll();
+            if (action == null) {
+                break;
+            }
+            inQueue.remove(action);
+            
+            if (action == ActionKey.NONE) continue;
 
-            if (count > MAX_RETRY) {
-                String error = "Max retries exceeded for action: " + action;
-                logger.logFailure(action, FailureType.FATAL, error);
-                context.getHistory().add(new ExecutionRecord(action, false, FailureType.FATAL, error));
-                WorkflowResult result = new WorkflowResult(false, error, false, null, FailureType.FATAL);
-                logger.logFinalSummary(false, error);
-                return result;
+            Workflow workflow = registry.get(action);
+            if (workflow == null) {
+                return failSafely(logger, context, action, "No workflow registered");
+            }
+
+            int execCount = executionCount.getOrDefault(action, 0) + 1;
+            executionCount.put(action, execCount);
+
+            if (execCount > MAX_PER_ACTION_EXECUTIONS) {
+                return failSafely(logger, context, action, "Hard execution loop limit exceeded for action: " + action);
+            }
+            
+            int retries = retryCount.getOrDefault(action, 0);
+            if (retries > workflow.getMaxRetries()) {
+                return failSafely(logger, context, action, "Max retries exceeded for action: " + action);
             }
 
             logger.logStart(action);
-            context.clearStepData();
-            WorkflowResult result = workflow.execute(context);
-            
+            WorkflowResult result = executeActionSafely(workflow, context, logger);
+
             if (result.getNextAction() != null && !registry.contains(result.getNextAction())) {
-                String error = "Invalid next action";
-                logger.logFailure(action, FailureType.FATAL, error);
-                context.getHistory().add(new ExecutionRecord(action, false, FailureType.FATAL, error));
-                WorkflowResult fatalResult = new WorkflowResult(false, error, false, null, FailureType.FATAL);
-                logger.logFinalSummary(false, error);
-                return fatalResult;
+                return failSafely(logger, context, action, "Invalid next action");
             }
-            
-            context.getHistory().add(new ExecutionRecord(action, result.isSuccess(), result.getFailureType(), result.getMessage()));
+
 
             if (result.isSuccess()) {
                 logger.logSuccess(action, result.getMessage());
-                context.getExecutedActions().add(action);
+                executionCount.remove(action);
+                retryCount.remove(action);
             } else {
-                FailureType failureType = result.getFailureType();
-                logger.logFailure(action, failureType, result.getMessage());
+                FailureCategory category = result.getFailureCategory();
+                logger.logFailure(action, category, result.getMessage());
 
-                if (failureType == FailureType.TRANSIENT) {
-                    long delay = BASE_DELAY_MS * (1L << (count - 1)) + random.nextInt(500);
-                    logger.logRetry(action, count, delay);
-                    try {
-                        Thread.sleep(delay);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                    queue.addFirst(action);
-                } else if (failureType == FailureType.CONFLICT && result.getNextAction() != null) {
-                    logger.logRecoveryInjection(action, result.getNextAction());
-                    queue.addFirst(action);
-                    queue.addFirst(result.getNextAction());
-                } else if (failureType == FailureType.FATAL) {
-                    if (result.isBlocking()) {
-                        logger.logDebug("Fatal error is blocking, stopping execution.");
-                        logger.logFinalSummary(false, result.getMessage());
-                        return result; 
-                    } else {
-                        logger.logDebug("Fatal error is non-blocking, continuing execution.");
-                    }
-                } else {
+                if (category == FailureCategory.SECURITY_VIOLATION || category == FailureCategory.FATAL_ERROR) {
+                    executionCount.remove(action);
+                    retryCount.remove(action);
                     logger.logFinalSummary(false, result.getMessage());
-                    return result; // Stop execution on unhandled
+                    return result;
+                }
+
+                if (category == FailureCategory.RECOVERABLE_ERROR) {
+                    if (result.getNextAction() != null) {
+                        logger.logRecoveryInjection(action, result.getNextAction());
+                        retryCount.remove(result.getNextAction());
+                        if (!safeEnqueue(queue, inQueue, result.getNextAction(), true, logger)) {
+                            return failSafely(logger, context, action, "Queue max size exceeded during recovery");
+                        }
+                    } else {
+                        long exponential = Math.min(1L << retries, 1L << 10);
+                        long delay = BASE_DELAY_MS * exponential + random.nextInt(500);
+                        logger.logRetry(action, retries + 1, delay);
+                        try {
+                            Thread.sleep(delay);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            return failSafely(logger, context, action, "Execution engine interrupted during backoff sleep");
+                        }
+                         retryCount.put(action, retries + 1);
+                        if (!safeEnqueue(queue, inQueue, action, false, logger)) {
+                            return failSafely(logger, context, action, "Queue max size exceeded during retry");
+                        }
+                    }
                 }
             }
         }
         
         logger.logFinalSummary(true, "All actions executed successfully.");
         return new WorkflowResult(true, "All actions executed successfully.");
+    }
+    
+    private WorkflowResult failSafely(ExecutionLogger logger, ExecutionContext context, ActionKey action, String error) {
+        if (action != null) logger.logFailure(action, FailureCategory.FATAL_ERROR, error);
+        logger.logFinalSummary(false, error);
+        return new WorkflowResult(false, error, null, FailureCategory.FATAL_ERROR);
+    }
+
+    private boolean safeEnqueue(Deque<ActionKey> queue, Set<ActionKey> inQueue, ActionKey nextAction, boolean injectFirst, ExecutionLogger logger) {
+        if (nextAction == null || nextAction == ActionKey.NONE) return true;
+        
+        if (queue.size() >= MAX_QUEUE_SIZE) {
+            return false;
+        }
+        
+        if (inQueue.contains(nextAction)) {
+            logger.logDebug("Anti-Spam: Skipping already queued action " + nextAction);
+            return true;
+        }
+        
+        if (injectFirst) {
+            queue.addFirst(nextAction);
+        } else {
+            queue.addLast(nextAction);
+        }
+        inQueue.add(nextAction);
+        return true;
+    }
+
+    private WorkflowResult executeActionSafely(Workflow workflow, ExecutionContext context, ExecutionLogger logger) {
+        Future<WorkflowResult> future;
+        try {
+            future = sandboxExecutor.submit(() -> workflow.execute(context));
+        } catch (RejectedExecutionException e) {
+            return new WorkflowResult(false, "Thread pool exhausted", null, FailureCategory.SECURITY_VIOLATION);
+        }
+
+        try {
+            long timeout = MAX_ACTION_EXECUTION_TIME_MS;
+            return future.get(timeout, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            boolean cancelled = future.cancel(true);
+            if (!cancelled) {
+                logger.logDebug("Failed to cancel task, potential zombie thread");
+            }
+            return new WorkflowResult(false, "Timeout elapsed", null, FailureCategory.SECURITY_VIOLATION);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new WorkflowResult(false, "Orchestrator interrupted", null, FailureCategory.FATAL_ERROR);
+        } catch (ExecutionException e) {
+            return mapSandboxException(e.getCause());
+        }
+    }
+
+    private WorkflowResult mapSandboxException(Throwable cause) {
+        if (cause instanceof SecurityException) {
+            return new WorkflowResult(false, "Security Violation: " + cause.getMessage(), null, FailureCategory.SECURITY_VIOLATION);
+        }
+        if (cause instanceof NullPointerException || cause instanceof IllegalArgumentException) {
+            return new WorkflowResult(false, "Fatal Workflow Bug: " + cause.getMessage(), null, FailureCategory.FATAL_ERROR);
+        }
+        return new WorkflowResult(false, "Unhandled Sandbox Crash: " + cause.getMessage(), null, FailureCategory.FATAL_ERROR);
     }
 }

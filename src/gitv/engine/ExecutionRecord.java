@@ -3,14 +3,14 @@ package gitv.engine;
 public class ExecutionRecord {
     private final ActionKey action;
     private final boolean success;
-    private final FailureType failureType;
+    private final FailureCategory FailureCategory;
     private final String message;
     private final long timestamp;
 
-    public ExecutionRecord(ActionKey action, boolean success, FailureType failureType, String message) {
+    public ExecutionRecord(ActionKey action, boolean success, FailureCategory FailureCategory, String message) {
         this.action = action;
         this.success = success;
-        this.failureType = failureType;
+        this.FailureCategory = FailureCategory;
         this.message = message;
         this.timestamp = System.currentTimeMillis();
     }
@@ -23,8 +23,8 @@ public class ExecutionRecord {
         return success;
     }
 
-    public FailureType getFailureType() {
-        return failureType;
+    public FailureCategory getFailureType() {
+        return FailureCategory;
     }
 
     public String getMessage() {
