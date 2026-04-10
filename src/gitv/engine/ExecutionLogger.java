@@ -22,11 +22,11 @@ public class ExecutionLogger {
         this.totalRetries = 0;
     }
 
-    public void logStart(ActionType action) {
+    public void logStart(ActionKey action) {
         System.out.printf("%s▶%s %s%s%s%n", BLUE, RESET, BOLD, action, RESET);
     }
 
-    public void logSuccess(ActionType action, String message) {
+    public void logSuccess(ActionKey action, String message) {
         this.totalSteps++;
         if (debugMode && message != null && !message.isEmpty()) {
             System.out.printf("   %s✓%s Success - %s%n", GREEN, RESET, message);
@@ -35,17 +35,17 @@ public class ExecutionLogger {
         }
     }
 
-    public void logFailure(ActionType action, FailureType type, String message) {
+    public void logFailure(ActionKey action, FailureType type, String message) {
         String color = (type == FailureType.FATAL) ? RED : YELLOW;
         System.out.printf("   %s✗%s %s[%s]%s Failed: %s%n", color, RESET, color, type, RESET, message);
     }
 
-    public void logRetry(ActionType action, int attempt, long delayMs) {
+    public void logRetry(ActionKey action, int attempt, long delayMs) {
         this.totalRetries++;
         System.out.printf("   %s↻%s Retrying in %dms (Attempt %d)...%n", YELLOW, RESET, delayMs, attempt);
     }
 
-    public void logRecoveryInjection(ActionType failedAction, ActionType recoveryAction) {
+    public void logRecoveryInjection(ActionKey failedAction, ActionKey recoveryAction) {
         System.out.printf("   %s↳%s Injecting recovery action: %s%s%n", CYAN, RESET, BOLD, recoveryAction, RESET);
     }
 
