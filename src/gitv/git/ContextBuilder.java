@@ -12,10 +12,11 @@ public class ContextBuilder {
     }
 
     public RepoContext build() {
-        String branch = gitService.getCurrentBranch();
         String status = gitService.getStatus();
         int changedFiles = gitService.countChangedFiles(status);
+        boolean hasChanges = changedFiles > 0;
+        boolean hasUnpushedCommits = gitService.hasUnpushedCommits();
 
-        return new RepoContext(branch, changedFiles);
+        return new RepoContext(hasChanges, hasUnpushedCommits);
     }
 }

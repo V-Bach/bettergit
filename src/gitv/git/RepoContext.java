@@ -1,19 +1,19 @@
 package gitv.git;
 
 public class RepoContext {
-    private final String branch;
-    private final int changedFiles;
+    private final boolean hasChanges;
+    private final boolean hasUnpushedCommits;
 
-    public RepoContext(String branch, int changedFiles) {
-        this.branch = branch;
-        this.changedFiles = changedFiles;
+    public RepoContext(boolean hasChanges, boolean hasUnpushedCommits) {
+        this.hasChanges = hasChanges;
+        this.hasUnpushedCommits = hasUnpushedCommits;
     }
 
-    public String getBranch() {
-        return branch;
+    public boolean hasChanges() {
+        return hasChanges;
     }
 
-    public int getChangedFiles() {
-        return changedFiles;
+    public boolean hasUnpushedCommits() {
+        return hasUnpushedCommits;
     }
 }

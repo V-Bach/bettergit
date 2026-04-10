@@ -75,4 +75,9 @@ public class GitService {
         CommandResult result = runCommand("git ls-files -u");
         return result.isSuccess() && !result.output.trim().isEmpty();
     }
+
+    public boolean hasUnpushedCommits() {
+        CommandResult result = runCommand("git status");
+        return result.isSuccess() && result.output.contains("ahead of");
+    }
 }
