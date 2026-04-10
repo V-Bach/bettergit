@@ -20,24 +20,24 @@ public class ExecutionEngine {
         this.registry = registry;
     }
 
-    public WorkflowResult execute(List<ActionType> initialActions, RepoContext repoContext) {
+    public WorkflowResult execute(List<ActionKey> initialActions, RepoContext repoContext) {
         ExecutionLogger logger = new ExecutionLogger(System.getProperty("gitv.debug") != null);
 
-        if (initialActions == null || initialActions.isEmpty() || (initialActions.size() == 1 && initialActions.get(0) == ActionType.NONE)) {
+        if (initialActions == null || initialActions.isEmpty() || (initialActions.size() == 1 && initialActions.get(0) == ActionKey.NONE)) {
             logger.logFinalSummary(true, "No actions to execute.");
             return new WorkflowResult(true, "No actions to execute.");
         }
 
         ExecutionContext context = new ExecutionContext(repoContext);
-        Deque<ActionType> queue = new LinkedList<>(initialActions);
+        Deque<ActionKey> queue = new LinkedList<>(initialActions);
 
         while (!queue.isEmpty()) {
-            ActionType action = queue.poll();
-            if (action == ActionType.NONE) continue;
+            ActionKey action = queue.poll();
+            if (action == ActionKey.NONE) continue;
             
-            Workflow workflow = registry.getWorkflow(action);
+            Workflow workflow = registry.get(action);
             if (workflow == null) {
-                WorkflowResult result = new WorkflowResult(false, "Unknown action: " + action);
+                WorkflowResult result = new WorkflowResult(false, "No workflow registered", false, null, FailureType.FATAL);
                 logger.logFailure(action, FailureType.FATAL, result.getMessage());
                 logger.logFinalSummary(false, result.getMessage());
                 return result;
@@ -58,6 +58,16 @@ public class ExecutionEngine {
             logger.logStart(action);
             context.clearStepData();
             WorkflowResult result = workflow.execute(context);
+            
+            if (result.getNextAction() != null && !registry.contains(result.getNextAction())) {
+                String error = "Invalid next action";
+                logger.logFailure(action, FailureType.FATAL, error);
+                context.getHistory().add(new ExecutionRecord(action, false, FailureType.FATAL, error));
+                WorkflowResult fatalResult = new WorkflowResult(false, error, false, null, FailureType.FATAL);
+                logger.logFinalSummary(false, error);
+                return fatalResult;
+            }
+            
             context.getHistory().add(new ExecutionRecord(action, result.isSuccess(), result.getFailureType(), result.getMessage()));
 
             if (result.isSuccess()) {
