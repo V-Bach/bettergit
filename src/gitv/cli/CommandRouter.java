@@ -37,7 +37,8 @@ public class CommandRouter {
                 ContextBuilder builder = new ContextBuilder();
                 RepoContext context = builder.build();
 
-                System.out.println("Changes: " + context.hasChanges());
+                System.out.println("Unstaged Changes: " + context.hasUnstagedChanges());
+                System.out.println("Staged Changes: " + context.hasStagedChanges());
                 System.out.println("Unpushed Commits: " + context.hasUnpushedCommits());
 
                 DecisionEngine engine = new DecisionEngine();

@@ -2,6 +2,7 @@ package gitv.suggestion;
 
 import gitv.engine.ActionKey;
 import java.util.List;
+import java.util.Collections;
 
 public class ScoredAction {
     private final ActionKey type;
@@ -12,6 +13,10 @@ public class ScoredAction {
         this.type = type;
         this.score = score;
         this.reasons = reasons;
+    }
+
+    public static ScoredAction none() {
+        return new ScoredAction(ActionKey.NONE, 0.0, Collections.singletonList("Clean working tree, nothing to do"));
     }
 
     public ActionKey getType() {

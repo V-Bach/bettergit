@@ -14,9 +14,12 @@ public class ContextBuilder {
     public RepoContext build() {
         String status = gitService.getStatus();
         int changedFiles = gitService.countChangedFiles(status);
-        boolean hasChanges = changedFiles > 0;
+        boolean hasUnstagedChanges = changedFiles > 0; // naive mapping for now
+        boolean hasStagedChanges = false;              // naive mapping for now
         boolean hasUnpushedCommits = gitService.hasUnpushedCommits();
+        boolean isAheadOfRemote = false;               // naive mapping for now
+        boolean isBehindRemote = false;                // naive mapping for now
 
-        return new RepoContext(hasChanges, hasUnpushedCommits);
+        return new RepoContext(hasUnstagedChanges, hasStagedChanges, hasUnpushedCommits, isAheadOfRemote, isBehindRemote);
     }
 }

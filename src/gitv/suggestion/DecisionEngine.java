@@ -1,48 +1,31 @@
 package gitv.suggestion;
 
-import gitv.engine.ActionKey;
 import gitv.git.RepoContext;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class DecisionEngine {
 
+    private final List<ActionEvaluator> evaluators;
+
+    public DecisionEngine() {
+        this.evaluators = new ArrayList<>();
+        this.evaluators.add(new CommitEvaluator());
+        this.evaluators.add(new PushEvaluator());
+    }
+
     public ScoredAction decide(RepoContext context) {
-        ScoredAction commitAction = evaluateCommit(context);
-        ScoredAction pushAction = evaluatePush(context);
+        List<ScoredAction> actions = new ArrayList<>();
 
-        // Selection logic: return the one with the highest score
-        if (commitAction.getScore() > pushAction.getScore() && commitAction.getScore() > 0) {
-            return commitAction;
-        } else if (pushAction.getScore() > 0) {
-            return pushAction;
+        for (ActionEvaluator evaluator : evaluators) {
+            actions.add(evaluator.evaluate(context));
         }
 
-        return new ScoredAction(ActionKey.NONE, 0.0, List.of("Clean working tree, nothing to do"));
-    }
-
-    private ScoredAction evaluateCommit(RepoContext context) {
-        double score = 0.0;
-        List<String> reasons = new ArrayList<>();
-
-        if (context.hasChanges()) {
-            score += 1.0;
-            reasons.add("hasChanges = true");
-        }
-
-        return new ScoredAction(ActionKey.COMMIT, score, reasons);
-    }
-
-    private ScoredAction evaluatePush(RepoContext context) {
-        double score = 0.0;
-        List<String> reasons = new ArrayList<>();
-
-        if (context.hasUnpushedCommits()) {
-            score += 1.0;
-            reasons.add("hasUnpushedCommits = true");
-        }
-
-        return new ScoredAction(ActionKey.PUSH, score, reasons);
+        return actions.stream()
+            .max(Comparator.comparingDouble(ScoredAction::getScore))
+            .filter(a -> a.getScore() > 0)
+            .orElse(ScoredAction.none());
     }
 }
