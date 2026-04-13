@@ -11,29 +11,29 @@ import java.util.concurrent.*;
 public class ExecutionEngine {
     private final WorkflowRegistry registry;
     private final ExecutorService sandboxExecutor;
-    
+
     private static final int MAX_TOTAL_STEPS = 50;
     private static final int MAX_QUEUE_SIZE = 10;
     private static final long BASE_DELAY_MS = 1000;
     private static final long MAX_ACTION_EXECUTION_TIME_MS = 1000;
     private static final int MAX_PER_ACTION_EXECUTIONS = 5;
-    
+
     private final Random random = new Random();
 
     public ExecutionEngine(WorkflowRegistry registry) {
         this.registry = registry;
         this.sandboxExecutor = new ThreadPoolExecutor(
-            4, 8,
-            60L, TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(100),
-            new ThreadPoolExecutor.AbortPolicy()
-        );
+                4, 8,
+                60L, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(100),
+                new ThreadPoolExecutor.AbortPolicy());
     }
 
     public WorkflowResult execute(List<ActionKey> initialActions, RepoContext repoContext) {
         ExecutionLogger logger = new ExecutionLogger(System.getProperty("gitv.debug") != null);
 
-        if (initialActions == null || initialActions.isEmpty() || (initialActions.size() == 1 && initialActions.get(0) == ActionKey.NONE)) {
+        if (initialActions == null || initialActions.isEmpty()
+                || (initialActions.size() == 1 && initialActions.get(0) == ActionKey.NONE)) {
             logger.logFinalSummary(true, "No actions to execute.");
             return new WorkflowResult(true, "No actions to execute.");
         }
@@ -62,8 +62,9 @@ public class ExecutionEngine {
                 break;
             }
             inQueue.remove(action);
-            
-            if (action == ActionKey.NONE) continue;
+
+            if (action == ActionKey.NONE)
+                continue;
 
             Workflow workflow = registry.get(action);
             if (workflow == null) {
@@ -76,7 +77,7 @@ public class ExecutionEngine {
             if (execCount > MAX_PER_ACTION_EXECUTIONS) {
                 return failSafely(logger, context, action, "Hard execution loop limit exceeded for action: " + action);
             }
-            
+
             int retries = retryCount.getOrDefault(action, 0);
             if (retries > workflow.getMaxRetries()) {
                 return failSafely(logger, context, action, "Max retries exceeded for action: " + action);
@@ -88,7 +89,6 @@ public class ExecutionEngine {
             if (result.getNextAction() != null && !registry.contains(result.getNextAction())) {
                 return failSafely(logger, context, action, "Invalid next action");
             }
-
 
             if (result.isSuccess()) {
                 logger.logSuccess(action, result.getMessage());
@@ -120,9 +120,10 @@ public class ExecutionEngine {
                             Thread.sleep(delay);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
-                            return failSafely(logger, context, action, "Execution engine interrupted during backoff sleep");
+                            return failSafely(logger, context, action,
+                                    "Execution engine interrupted during backoff sleep");
                         }
-                         retryCount.put(action, retries + 1);
+                        retryCount.put(action, retries + 1);
                         if (!safeEnqueue(queue, inQueue, action, false, logger)) {
                             return failSafely(logger, context, action, "Queue max size exceeded during retry");
                         }
@@ -130,29 +131,33 @@ public class ExecutionEngine {
                 }
             }
         }
-        
+
         logger.logFinalSummary(true, "All actions executed successfully.");
         return new WorkflowResult(true, "All actions executed successfully.");
     }
-    
-    private WorkflowResult failSafely(ExecutionLogger logger, ExecutionContext context, ActionKey action, String error) {
-        if (action != null) logger.logFailure(action, FailureCategory.FATAL_ERROR, error);
+
+    private WorkflowResult failSafely(ExecutionLogger logger, ExecutionContext context, ActionKey action,
+            String error) {
+        if (action != null)
+            logger.logFailure(action, FailureCategory.FATAL_ERROR, error);
         logger.logFinalSummary(false, error);
         return new WorkflowResult(false, error, null, FailureCategory.FATAL_ERROR);
     }
 
-    private boolean safeEnqueue(Deque<ActionKey> queue, Set<ActionKey> inQueue, ActionKey nextAction, boolean injectFirst, ExecutionLogger logger) {
-        if (nextAction == null || nextAction == ActionKey.NONE) return true;
-        
+    private boolean safeEnqueue(Deque<ActionKey> queue, Set<ActionKey> inQueue, ActionKey nextAction,
+            boolean injectFirst, ExecutionLogger logger) {
+        if (nextAction == null || nextAction == ActionKey.NONE)
+            return true;
+
         if (queue.size() >= MAX_QUEUE_SIZE) {
             return false;
         }
-        
+
         if (inQueue.contains(nextAction)) {
             logger.logDebug("Anti-Spam: Skipping already queued action " + nextAction);
             return true;
         }
-        
+
         if (injectFirst) {
             queue.addFirst(nextAction);
         } else {
@@ -189,11 +194,14 @@ public class ExecutionEngine {
 
     private WorkflowResult mapSandboxException(Throwable cause) {
         if (cause instanceof SecurityException) {
-            return new WorkflowResult(false, "Security Violation: " + cause.getMessage(), null, FailureCategory.SECURITY_VIOLATION);
+            return new WorkflowResult(false, "Security Violation: " + cause.getMessage(), null,
+                    FailureCategory.SECURITY_VIOLATION);
         }
         if (cause instanceof NullPointerException || cause instanceof IllegalArgumentException) {
-            return new WorkflowResult(false, "Fatal Workflow Bug: " + cause.getMessage(), null, FailureCategory.FATAL_ERROR);
+            return new WorkflowResult(false, "Fatal Workflow Bug: " + cause.getMessage(), null,
+                    FailureCategory.FATAL_ERROR);
         }
-        return new WorkflowResult(false, "Unhandled Sandbox Crash: " + cause.getMessage(), null, FailureCategory.FATAL_ERROR);
+        return new WorkflowResult(false, "Unhandled Sandbox Crash: " + cause.getMessage(), null,
+                FailureCategory.FATAL_ERROR);
     }
 }

@@ -6,13 +6,10 @@ import java.util.Collections;
 
 public class SuggestionEngine {
     public Suggestion suggest(RepoContext context) {
-        int changedFiles = context.getChangedFiles();
-        if (changedFiles == 0) {
+        if (!context.hasUnstagedChanges() && !context.hasStagedChanges()) {
             return new Suggestion("✅ Working tree clean", Collections.emptyList(), false, "");
-        } else if (changedFiles <= 5) {
-            return new Suggestion("⚠️ You have " + changedFiles + " changes\n👉 Safe to commit", Collections.singletonList(ActionKey.COMMIT), true, "Do you want to run suggested command? (y/n) ");
         } else {
-            return new Suggestion("⚠️ You have many changes (" + changedFiles + " files)\n👉 Consider reviewing", Collections.singletonList(ActionKey.COMMIT), true, "You have many changes. Are you sure? (y/n) ");
+            return new Suggestion("⚠️ You have changes\n👉 Safe to commit", Collections.singletonList(ActionKey.COMMIT), true, "Do you want to run suggested command? (y/n) ");
         }
     }
 }
