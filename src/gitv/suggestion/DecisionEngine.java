@@ -16,16 +16,33 @@ public class DecisionEngine {
         this.evaluators.add(new PushEvaluator());
     }
 
-    public ScoredAction decide(RepoContext context) {
+    public DecisionResult decide(RepoContext context) {
         List<ScoredAction> actions = new ArrayList<>();
 
         for (ActionEvaluator evaluator : evaluators) {
             actions.add(evaluator.evaluate(context));
         }
 
-        return actions.stream()
-            .max(Comparator.comparingDouble(ScoredAction::getScore))
-            .filter(a -> a.getScore() > 0)
-            .orElse(ScoredAction.none());
+        actions.sort(Comparator.comparingDouble(ScoredAction::getScore)
+            .thenComparingInt(ScoredAction::getPriority)
+            .reversed());
+
+        ScoredAction selected = null;
+        List<ScoredAction> alternatives = new ArrayList<>();
+
+        for (ScoredAction action : actions) {
+            if (selected == null && !action.isBlocked() && action.getScore() > 0) {
+                selected = action;
+            } else {
+                alternatives.add(action);
+            }
+        }
+
+        if (selected == null) {
+            selected = ScoredAction.none();
+        }
+
+        return new DecisionResult(selected, alternatives);
     }
 }
+
