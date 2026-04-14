@@ -8,8 +8,10 @@ import gitv.git.ContextBuilder;
 import gitv.git.GitService;
 import gitv.git.RepoContext;
 import gitv.workflow.WorkflowResult;
+import gitv.suggestion.DecisionResult;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Scanner;
 
 public class CommandRouter {
@@ -42,9 +44,11 @@ public class CommandRouter {
                 System.out.println("Unpushed Commits: " + context.hasUnpushedCommits());
 
                 DecisionEngine engine = new DecisionEngine();
-                ScoredAction action = engine.decide(context);
+                DecisionResult result = engine.decide(context);
+                ScoredAction action = result.getSelected();
                 
                 printExplanation(action);
+                printAlternatives(result.getAlternatives());
                 break;
             }
             case "go": {
@@ -58,11 +62,14 @@ public class CommandRouter {
                 ContextBuilder builder = new ContextBuilder();
                 RepoContext context = builder.build();
 
-                ScoredAction action = engine.decide(context);
+                DecisionResult decisionResult = engine.decide(context);
+                ScoredAction action = decisionResult.getSelected();
+                
                 printExplanation(action);
+                printAlternatives(decisionResult.getAlternatives());
 
                 if (action.getType() != ActionKey.NONE) {
-                    System.out.print("Do you want to run the recommended command? (y/n) ");
+                    System.out.print("\nDo you want to run the recommended command? (y/n) ");
                     String answer = scanner.nextLine();
                     if (!answer.trim().equalsIgnoreCase("y")) {
                         System.out.println("Aborted.");
@@ -83,11 +90,24 @@ public class CommandRouter {
     }
 
     private void printExplanation(ScoredAction action) {
-        System.out.println("Recommended: " + action.getType().toString());
-        System.out.println("Score: " + action.getScore());
+        System.out.println("Recommended: " + action.getType().toString() + " (score: " + action.getScore() + ")");
         System.out.println("Reasons:");
         for (String reason : action.getReasons()) {
-            System.out.println("* " + reason);
+            System.out.println("- " + reason);
+        }
+    }
+
+    private void printAlternatives(List<ScoredAction> alternatives) {
+        if (alternatives == null || alternatives.isEmpty()) {
+            return;
+        }
+        System.out.println("\nAlternatives:");
+        for (ScoredAction alt : alternatives) {
+            String status = alt.isBlocked() ? "(blocked)" : "(score: " + alt.getScore() + ")";
+            System.out.println("- " + alt.getType().toString() + " " + status);
+            for (String reason : alt.getReasons()) {
+                System.out.println("    * " + reason);
+            }
         }
     }
 }
