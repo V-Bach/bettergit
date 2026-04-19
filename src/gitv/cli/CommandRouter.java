@@ -9,9 +9,11 @@ import gitv.git.GitService;
 import gitv.git.RepoContext;
 import gitv.workflow.WorkflowResult;
 import gitv.suggestion.DecisionResult;
+import gitv.workflow.ExecutionStep;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Scanner;
 
 public class CommandRouter {
@@ -45,9 +47,11 @@ public class CommandRouter {
 
                 DecisionEngine engine = new DecisionEngine();
                 DecisionResult result = engine.decide(context);
-                ScoredAction action = result.getSelected();
                 
-                printExplanation(action);
+                gitv.workflow.PlanBuilder planBuilder = new gitv.workflow.PlanBuilder();
+                gitv.workflow.ExecutionPlan plan = planBuilder.build(result, context);
+
+                printPlan(plan);
                 printAlternatives(result.getAlternatives());
                 break;
             }
@@ -63,18 +67,21 @@ public class CommandRouter {
                 RepoContext context = builder.build();
 
                 DecisionResult decisionResult = engine.decide(context);
-                ScoredAction action = decisionResult.getSelected();
-                
-                printExplanation(action);
+                gitv.workflow.PlanBuilder planBuilder = new gitv.workflow.PlanBuilder();
+                gitv.workflow.ExecutionPlan plan = planBuilder.build(decisionResult, context);
+
+                printPlan(plan);
                 printAlternatives(decisionResult.getAlternatives());
 
-                if (action.getType() != ActionKey.NONE) {
-                    System.out.print("\nDo you want to run the recommended command? (y/n) ");
+                List<ExecutionStep> steps = plan.getSteps();
+                if (steps != null && !steps.isEmpty()) {
+                    System.out.print("\nDo you want to run the execution plan? (y/n) ");
                     String answer = scanner.nextLine();
                     if (!answer.trim().equalsIgnoreCase("y")) {
                         System.out.println("Aborted.");
                     } else {
-                        WorkflowResult result = executionEngine.execute(Collections.singletonList(action.getType()), context);
+                        List<ActionKey> extractActionKeys = steps.stream().map(ExecutionStep::getAction).collect(Collectors.toList());
+                        WorkflowResult result = executionEngine.execute(extractActionKeys, context);
                         if (result.isSuccess()) {
                             System.out.println("✅ " + result.getMessage());
                         } else {
@@ -89,11 +96,27 @@ public class CommandRouter {
         }
     }
 
-    private void printExplanation(ScoredAction action) {
-        System.out.println("Recommended: " + action.getType().toString() + " (score: " + action.getScore() + ")");
-        System.out.println("Reasons:");
-        for (String reason : action.getReasons()) {
-            System.out.println("- " + reason);
+    private void printPlan(gitv.workflow.ExecutionPlan plan) {
+        List<ExecutionStep> steps = plan.getSteps();
+        
+        if (steps == null || steps.isEmpty()) {
+            System.out.println("Execution Plan:\n- NONE (No action required)");
+            return;
+        }
+
+        System.out.println("Execution Plan:");
+        for (int i = 0; i < steps.size(); i++) {
+            ExecutionStep step = steps.get(i);
+            System.out.println((i + 1) + ". " + step.getAction().toString());
+            List<String> reasons = step.getReasons();
+            if (reasons != null && !reasons.isEmpty()) {
+                for (String reason : reasons) {
+                    System.out.println("   - " + reason);
+                }
+            }
+            if (i < steps.size() - 1) {
+                System.out.println();
+            }
         }
     }
 
