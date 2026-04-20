@@ -11,7 +11,7 @@ import java.util.List;
 
 public class PlanBuilder {
 
-    public ExecutionPlan build(DecisionResult decision, RepoContext context) {
+    public ExecutionPlan build(DecisionResult decision) {
         if (decision == null || decision.getSelected() == null) {
             return new ExecutionPlan(Collections.emptyList());
         }
