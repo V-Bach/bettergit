@@ -10,6 +10,8 @@ import gitv.git.RepoContext;
 import gitv.workflow.WorkflowResult;
 import gitv.suggestion.DecisionResult;
 import gitv.workflow.ExecutionStep;
+import gitv.workflow.SafetyResult;
+import gitv.workflow.SafetyValidator;
 
 import java.util.Collections;
 import java.util.List;
@@ -49,13 +51,16 @@ public class CommandRouter {
                 DecisionResult result = engine.decide(context);
                 
                 gitv.workflow.PlanBuilder planBuilder = new gitv.workflow.PlanBuilder();
-                gitv.workflow.ExecutionPlan plan = planBuilder.build(result, context);
+                gitv.workflow.ExecutionPlan plan = planBuilder.build(result);
 
                 printPlan(plan);
                 printAlternatives(result.getAlternatives());
                 break;
             }
             case "go": {
+                boolean isDryRun = args.length > 1 && args[1].equals("--dry");
+                boolean isConfirm = args.length > 1 && args[1].equals("--confirm");
+
                 DecisionEngine engine = new DecisionEngine();
                 GitService git = new GitService();
                 if (!git.isGitRepository()) {
@@ -68,26 +73,46 @@ public class CommandRouter {
 
                 DecisionResult decisionResult = engine.decide(context);
                 gitv.workflow.PlanBuilder planBuilder = new gitv.workflow.PlanBuilder();
-                gitv.workflow.ExecutionPlan plan = planBuilder.build(decisionResult, context);
+                gitv.workflow.ExecutionPlan plan = planBuilder.build(decisionResult);
 
                 printPlan(plan);
                 printAlternatives(decisionResult.getAlternatives());
 
                 List<ExecutionStep> steps = plan.getSteps();
-                if (steps != null && !steps.isEmpty()) {
+                if (steps == null || steps.isEmpty() || steps.get(0).getAction() == ActionKey.NONE) {
+                    break;
+                }
+
+                if (isDryRun) {
+                    System.out.println("\n[DRY RUN] No actions executed.");
+                    break;
+                }
+
+                if (isConfirm) {
                     System.out.print("\nDo you want to run the execution plan? (y/n) ");
                     String answer = scanner.nextLine();
                     if (!answer.trim().equalsIgnoreCase("y")) {
                         System.out.println("Aborted.");
-                    } else {
-                        List<ActionKey> extractActionKeys = steps.stream().map(ExecutionStep::getAction).collect(Collectors.toList());
-                        WorkflowResult result = executionEngine.execute(extractActionKeys, context);
-                        if (result.isSuccess()) {
-                            System.out.println("✅ " + result.getMessage());
-                        } else {
-                            System.out.println("❌ " + result.getMessage());
-                        }
+                        break;
                     }
+                    // Re-fetch context to prevent state drift
+                    context = builder.build();
+                }
+
+                SafetyValidator safetyValidator = new SafetyValidator();
+                SafetyResult safetyResult = safetyValidator.validate(plan, context);
+
+                if (!safetyResult.isSafe()) {
+                    System.out.println("\n❌ Safety Guard: Cannot execute plan. Reason: " + safetyResult.getMessage());
+                    break;
+                }
+
+                List<ActionKey> extractActionKeys = steps.stream().map(ExecutionStep::getAction).collect(Collectors.toList());
+                WorkflowResult result = executionEngine.execute(extractActionKeys, context);
+                if (result.isSuccess()) {
+                    System.out.println("✅ " + result.getMessage());
+                } else {
+                    System.out.println("❌ " + result.getMessage());
                 }
                 break;
             }
