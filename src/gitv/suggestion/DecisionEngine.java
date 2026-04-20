@@ -13,6 +13,7 @@ public class DecisionEngine {
     public DecisionEngine() {
         this.evaluators = new ArrayList<>();
         this.evaluators.add(new CommitEvaluator());
+        this.evaluators.add(new PullEvaluator());
         this.evaluators.add(new PushEvaluator());
     }
 

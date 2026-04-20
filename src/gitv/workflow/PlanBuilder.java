@@ -20,20 +20,27 @@ public class PlanBuilder {
         ActionKey action = selected.getType();
         List<ExecutionStep> steps = new ArrayList<>();
 
-        if (action == ActionKey.COMMIT) {
-            steps.add(new ExecutionStep(ActionKey.COMMIT, selected.getReasons()));
-            steps.add(new ExecutionStep(ActionKey.PUSH, Collections.singletonList("Added as follow-up to COMMIT")));
-        } else if (action == ActionKey.PUSH) {
-            if (context.isBehindRemote()) {
-                steps.add(new ExecutionStep(ActionKey.PULL, Collections.singletonList("PULL required before PUSH (remote ahead)")));
-                steps.add(new ExecutionStep(ActionKey.PUSH, selected.getReasons()));
+        boolean hasBlockedPush = decision.getAlternatives().stream()
+                .anyMatch(a -> a.getType() == ActionKey.PUSH && a.isBlocked());
+
+        if (action == ActionKey.NONE) {
+            if (hasBlockedPush) {
+                steps.add(new ExecutionStep(ActionKey.PULL, Collections.singletonList("Fallback PULL for blocked PUSH intent")));
+                steps.add(new ExecutionStep(ActionKey.PUSH, Collections.singletonList("Executing previously blocked PUSH")));
+            }
+        } else if (action == ActionKey.COMMIT) {
+            if (hasBlockedPush) {
+                steps.add(new ExecutionStep(ActionKey.PULL, Collections.singletonList("Syncing remote before local commit to prevent topology crash")));
+                steps.add(new ExecutionStep(ActionKey.COMMIT, selected.getReasons()));
+                steps.add(new ExecutionStep(ActionKey.PUSH, Collections.singletonList("Added as follow-up to COMMIT")));
             } else {
-                steps.add(new ExecutionStep(ActionKey.PUSH, selected.getReasons()));
+                steps.add(new ExecutionStep(ActionKey.COMMIT, selected.getReasons()));
+                steps.add(new ExecutionStep(ActionKey.PUSH, Collections.singletonList("Added as follow-up to COMMIT")));
             }
         } else if (action == ActionKey.PULL) {
             steps.add(new ExecutionStep(ActionKey.PULL, selected.getReasons()));
-        } else if (action == ActionKey.NONE) {
-            steps.add(new ExecutionStep(ActionKey.NONE, Collections.singletonList("No safe actions available")));
+        } else if (action == ActionKey.PUSH) {
+            steps.add(new ExecutionStep(ActionKey.PUSH, selected.getReasons()));
         } else {
             steps.add(new ExecutionStep(action, selected.getReasons()));
         }
