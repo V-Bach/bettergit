@@ -56,7 +56,7 @@ class PlanBuilderTest {
     void shouldReturnEmptyPlan_whenNoActionSelected() {
         DecisionResult decision = createDecision(ActionKey.NONE);
         // Null context proves context-less execution
-        ExecutionPlan plan = planBuilder.build(decision, null);
+        ExecutionPlan plan = planBuilder.build(decision);
         
         List<ActionKey> actions = extractActions(plan);
         assertEquals(Collections.emptyList(), actions, 
@@ -66,7 +66,7 @@ class PlanBuilderTest {
     @Test
     void shouldCommitAndPush_whenCommitSelected() {
         DecisionResult decision = createDecision(ActionKey.COMMIT);
-        ExecutionPlan plan = planBuilder.build(decision, null);
+        ExecutionPlan plan = planBuilder.build(decision);
 
         List<ActionKey> actions = extractActions(plan);
         assertEquals(Arrays.asList(ActionKey.COMMIT, ActionKey.PUSH), actions,
@@ -76,7 +76,7 @@ class PlanBuilderTest {
     @Test
     void shouldPush_whenPushSelected() {
         DecisionResult decision = createDecision(ActionKey.PUSH);
-        ExecutionPlan plan = planBuilder.build(decision, null);
+        ExecutionPlan plan = planBuilder.build(decision);
 
         List<ActionKey> actions = extractActions(plan);
         assertEquals(Collections.singletonList(ActionKey.PUSH), actions,
@@ -86,7 +86,7 @@ class PlanBuilderTest {
     @Test
     void shouldPullThenPush_whenPushBlockedAndNoSelectedAction() {
         DecisionResult decision = createDecision(ActionKey.NONE, blockedPush());
-        ExecutionPlan plan = planBuilder.build(decision, null);
+        ExecutionPlan plan = planBuilder.build(decision);
 
         List<ActionKey> actions = extractActions(plan);
         assertEquals(Arrays.asList(ActionKey.PULL, ActionKey.PUSH), actions,
@@ -96,7 +96,7 @@ class PlanBuilderTest {
     @Test
     void shouldPullCommitPush_whenCommitSelectedAndPushBlocked() {
         DecisionResult decision = createDecision(ActionKey.COMMIT, blockedPush());
-        ExecutionPlan plan = planBuilder.build(decision, null);
+        ExecutionPlan plan = planBuilder.build(decision);
 
         List<ActionKey> actions = extractActions(plan);
         assertEquals(Arrays.asList(ActionKey.PULL, ActionKey.COMMIT, ActionKey.PUSH), actions,
@@ -108,7 +108,7 @@ class PlanBuilderTest {
     @Test
     void shouldOnlyPull_whenPullSelectedEvenIfPushBlocked() {
         DecisionResult decision = createDecision(ActionKey.PULL, blockedPush());
-        ExecutionPlan plan = planBuilder.build(decision, null);
+        ExecutionPlan plan = planBuilder.build(decision);
 
         List<ActionKey> actions = extractActions(plan);
         assertEquals(Collections.singletonList(ActionKey.PULL), actions,
