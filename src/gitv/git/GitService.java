@@ -4,26 +4,26 @@ import java.io.*;
 
 public class GitService {
     public String getCurrentBranch() {
-        CommandResult result = runCommand("git branch --show-current");
+        CommandResult result = runCommand("git", "branch", "--show-current");
         return result.isSuccess() ? result.output.trim() : "";
     }
 
     public String getStatus() {
-        CommandResult result = runCommand("git status --porcelain=v1 -b");
+        CommandResult result = runCommand("git", "status", "--porcelain=v1", "-b");
         return result.isSuccess() ? result.output : "";
     }
 
     public boolean isGitRepository() {
-        CommandResult result = runCommand("git rev-parse --is-inside-work-tree");
+        CommandResult result = runCommand("git", "rev-parse", "--is-inside-work-tree");
         return result.isSuccess() && result.output.trim().equals("true");
     }
 
-    private CommandResult runCommand(String command) {
+    private CommandResult runCommand(String... command) {
         StringBuilder output = new StringBuilder();
         int exitCode = -1;
 
         try {
-            ProcessBuilder builder = new ProcessBuilder("cmd.exe", "/c", command);
+            ProcessBuilder builder = new ProcessBuilder(command);
             builder.directory(new File(System.getProperty("user.dir")));
             builder.redirectErrorStream(true);
             Process process = builder.start();
@@ -56,28 +56,28 @@ public class GitService {
         return count;
     }
 
-    public boolean commitAll() {
-        CommandResult result = runCommand("git add . && git commit -m \"auto commit\"");
+    public boolean commit(String message) {
+        CommandResult result = runCommand("git", "commit", "-m", message);
         return result.isSuccess();
     }
 
     public boolean push() {
-        CommandResult result = runCommand("git push");
+        CommandResult result = runCommand("git", "push");
         return result.isSuccess();
     }
 
     public boolean pull() {
-        CommandResult result = runCommand("git pull");
+        CommandResult result = runCommand("git", "pull");
         return result.isSuccess();
     }
 
     public boolean hasMergeConflicts() {
-        CommandResult result = runCommand("git ls-files -u");
+        CommandResult result = runCommand("git", "ls-files", "-u");
         return result.isSuccess() && !result.output.trim().isEmpty();
     }
 
     public boolean hasUnpushedCommits() {
-        CommandResult result = runCommand("git status");
+        CommandResult result = runCommand("git", "status");
         return result.isSuccess() && result.output.contains("ahead of");
     }
 

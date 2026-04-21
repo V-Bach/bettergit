@@ -22,7 +22,7 @@ public class SyncWorkflow implements Workflow {
             return new WorkflowResult(false, "Sync failed. Repository has active merge conflicts.", null, FailureCategory.FATAL_ERROR);
         }
 
-        boolean commitSuccess = gitService.commitAll();
+        boolean commitSuccess = gitService.commit("Automated sync via workflow.");
         if (!commitSuccess) {
             return new WorkflowResult(false, "Sync failed during commit.", null, FailureCategory.FATAL_ERROR);
         }

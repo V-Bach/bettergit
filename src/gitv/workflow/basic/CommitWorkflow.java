@@ -15,7 +15,7 @@ public class CommitWorkflow implements Workflow {
 
     @Override
     public WorkflowResult execute(ExecutionContext context) {
-        boolean success = gitService.commitAll();
+        boolean success = gitService.commit("Automated commit via workflow.");
         return new WorkflowResult(
                 success,
                 success ? "Commit successful." : "Commit failed.",
