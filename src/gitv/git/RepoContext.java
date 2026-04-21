@@ -34,4 +34,20 @@ public class RepoContext {
     public boolean isBehindRemote() {
         return isBehindRemote;
     }
+
+    public RepoContext withStagedChanges(boolean hasStagedChanges) {
+        return new RepoContext(this.hasUnstagedChanges, hasStagedChanges, this.hasUnpushedCommits, this.isAheadOfRemote, this.isBehindRemote);
+    }
+
+    public RepoContext withAheadOfRemote(boolean isAheadOfRemote) {
+        return new RepoContext(this.hasUnstagedChanges, this.hasStagedChanges, this.hasUnpushedCommits, isAheadOfRemote, this.isBehindRemote);
+    }
+
+    public RepoContext withBehindRemote(boolean isBehindRemote) {
+        return new RepoContext(this.hasUnstagedChanges, this.hasStagedChanges, this.hasUnpushedCommits, this.isAheadOfRemote, isBehindRemote);
+    }
+
+    public RepoContext withUnpushedCommits(boolean hasUnpushedCommits) {
+        return new RepoContext(this.hasUnstagedChanges, this.hasStagedChanges, hasUnpushedCommits, this.isAheadOfRemote, this.isBehindRemote);
+    }
 }
