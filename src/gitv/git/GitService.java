@@ -9,7 +9,7 @@ public class GitService {
     }
 
     public String getStatus() {
-        CommandResult result = runCommand("git status --porcelain");
+        CommandResult result = runCommand("git status --porcelain=v1 -b");
         return result.isSuccess() ? result.output : "";
     }
 
@@ -79,5 +79,53 @@ public class GitService {
     public boolean hasUnpushedCommits() {
         CommandResult result = runCommand("git status");
         return result.isSuccess() && result.output.contains("ahead of");
+    }
+
+    public boolean hasStagedChanges(String status) {
+        if (status == null || status.trim().isEmpty()) return false;
+        String[] lines = status.split("\\r?\\n");
+        for (String line : lines) {
+            if (line.startsWith("##")) continue;
+            if (line.length() > 0) {
+                char x = line.charAt(0);
+                if (x == 'M' || x == 'A' || x == 'D' || x == 'R' || x == 'C') {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean hasUnstagedChanges(String status) {
+        if (status == null || status.trim().isEmpty()) return false;
+        String[] lines = status.split("\\r?\\n");
+        for (String line : lines) {
+            if (line.startsWith("##")) continue;
+            if (line.length() > 1) {
+                char y = line.charAt(1);
+                if (y == 'M' || y == 'D' || line.startsWith("??")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isAheadOfRemote(String status) {
+        if (status == null || status.trim().isEmpty()) return false;
+        String[] lines = status.split("\\r?\\n");
+        if (lines.length > 0 && lines[0].startsWith("##")) {
+            return lines[0].contains("ahead ");
+        }
+        return false;
+    }
+
+    public boolean isBehindRemote(String status) {
+        if (status == null || status.trim().isEmpty()) return false;
+        String[] lines = status.split("\\r?\\n");
+        if (lines.length > 0 && lines[0].startsWith("##")) {
+            return lines[0].contains("behind ");
+        }
+        return false;
     }
 }

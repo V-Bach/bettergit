@@ -14,7 +14,6 @@ public interface Workflow {
     }
 
     default boolean isIdempotent() {
-        return  true;
+        return true;
     }
 }
-// This code defines a Workflow interface with an execute method that takes an ExecutionContext and returns a WorkflowResult. It also includes default methods for getting the maximum number of retries, expected execution time, and whether the workflow is idempotent.
