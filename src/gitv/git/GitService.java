@@ -3,6 +3,31 @@ package gitv.git;
 import java.io.*;
 
 public class GitService {
+    private File repoRoot = null;
+
+    private synchronized File getRepoRoot() {
+        if (repoRoot != null) {
+            return repoRoot;
+        }
+        try {
+            ProcessBuilder builder = new ProcessBuilder("git", "rev-parse", "--show-toplevel");
+            builder.directory(new File(System.getProperty("user.dir")));
+            Process process = builder.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String topLevel = reader.readLine();
+            int exitCode = process.waitFor();
+
+            if (exitCode == 0 && topLevel != null && !topLevel.trim().isEmpty()) {
+                repoRoot = new File(topLevel.trim());
+            } else {
+                repoRoot = new File(System.getProperty("user.dir"));
+            }
+        } catch (Exception e) {
+            repoRoot = new File(System.getProperty("user.dir"));
+        }
+        return repoRoot;
+    }
+
     public String getCurrentBranch() {
         CommandResult result = runCommand("git", "branch", "--show-current");
         return result.isSuccess() ? result.output.trim() : "";
@@ -24,7 +49,7 @@ public class GitService {
 
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
-            builder.directory(new File(System.getProperty("user.dir")));
+            builder.directory(getRepoRoot());
             builder.redirectErrorStream(true);
             Process process = builder.start();
 
