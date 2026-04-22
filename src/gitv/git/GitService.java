@@ -153,4 +153,14 @@ public class GitService {
         }
         return false;
     }
+    
+    public boolean hasRemote() {
+        CommandResult result = runCommand("git", "remote");
+        return result.isSuccess() && !result.output.trim().isEmpty();
+    }
+    
+    public boolean addAll() {
+        CommandResult result = runCommand("git", "add", ".");
+        return result.isSuccess();
+    }
 }

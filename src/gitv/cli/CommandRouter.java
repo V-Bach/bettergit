@@ -3,7 +3,6 @@ package gitv.cli;
 import gitv.engine.ActionKey;
 import gitv.engine.ExecutionEngine;
 import gitv.suggestion.DecisionEngine;
-import gitv.suggestion.ScoredAction;
 import gitv.git.ContextBuilder;
 import gitv.git.GitService;
 import gitv.git.RepoContext;
@@ -54,7 +53,7 @@ public class CommandRouter {
                 gitv.workflow.ExecutionPlan plan = planBuilder.build(result);
 
                 printPlan(plan);
-                printAlternatives(result.getAlternatives());
+                printReasoning(result);
                 break;
             }
             case "go": {
@@ -76,7 +75,7 @@ public class CommandRouter {
                 gitv.workflow.ExecutionPlan plan = planBuilder.build(decisionResult);
 
                 printPlan(plan);
-                printAlternatives(decisionResult.getAlternatives());
+                printReasoning(decisionResult);
 
                 List<ExecutionStep> steps = plan.getSteps();
                 if (steps == null || steps.isEmpty() || steps.get(0).getAction() == ActionKey.NONE) {
@@ -145,17 +144,14 @@ public class CommandRouter {
         }
     }
 
-    private void printAlternatives(List<ScoredAction> alternatives) {
-        if (alternatives == null || alternatives.isEmpty()) {
+    private void printReasoning(DecisionResult decisionResult) {
+        if (decisionResult == null || decisionResult.getAppliedRules() == null || decisionResult.getAppliedRules().isEmpty()) {
             return;
         }
-        System.out.println("\nAlternatives:");
-        for (ScoredAction alt : alternatives) {
-            String status = alt.isBlocked() ? "(blocked)" : "(score: " + alt.getScore() + ")";
-            System.out.println("- " + alt.getType().toString() + " " + status);
-            for (String reason : alt.getReasons()) {
-                System.out.println("    * " + reason);
-            }
+        System.out.println("\nReasoning (Goal: " + decisionResult.getGoal() + "):");
+        for (gitv.suggestion.rule.RuleResponse rule : decisionResult.getAppliedRules()) {
+            System.out.println("- [" + rule.getTier() + "] " + rule.getModule() + " (Score: " + rule.getScore() + ")");
+            System.out.println("    * " + rule.getReason());
         }
     }
 }
