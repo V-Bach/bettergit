@@ -10,6 +10,7 @@ public final class ActionKey {
     public static final ActionKey PUSH = ActionKey.ofUnsafe("PUSH");
     public static final ActionKey PULL = ActionKey.ofUnsafe("PULL");
     public static final ActionKey SYNC = ActionKey.ofUnsafe("SYNC");
+    public static final ActionKey ADD = ActionKey.ofUnsafe("ADD");
     public static final ActionKey NONE = ActionKey.ofUnsafe("NONE");
 
     private final String name;
