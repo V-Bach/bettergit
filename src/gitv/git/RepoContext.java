@@ -6,13 +6,15 @@ public class RepoContext {
     private final boolean hasUnpushedCommits;
     private final boolean isAheadOfRemote;
     private final boolean isBehindRemote;
+    private final boolean hasRemote;
 
-    public RepoContext(boolean hasUnstagedChanges, boolean hasStagedChanges, boolean hasUnpushedCommits, boolean isAheadOfRemote, boolean isBehindRemote) {
+    public RepoContext(boolean hasUnstagedChanges, boolean hasStagedChanges, boolean hasUnpushedCommits, boolean isAheadOfRemote, boolean isBehindRemote, boolean hasRemote) {
         this.hasUnstagedChanges = hasUnstagedChanges;
         this.hasStagedChanges = hasStagedChanges;
         this.hasUnpushedCommits = hasUnpushedCommits;
         this.isAheadOfRemote = isAheadOfRemote;
         this.isBehindRemote = isBehindRemote;
+        this.hasRemote = hasRemote;
     }
 
     public boolean hasUnstagedChanges() {
@@ -33,5 +35,29 @@ public class RepoContext {
 
     public boolean isBehindRemote() {
         return isBehindRemote;
+    }
+    
+    public boolean hasRemote() {
+        return hasRemote;
+    }
+
+    public RepoContext withStagedChanges(boolean hasStagedChanges) {
+        return new RepoContext(this.hasUnstagedChanges, hasStagedChanges, this.hasUnpushedCommits, this.isAheadOfRemote, this.isBehindRemote, this.hasRemote);
+    }
+
+    public RepoContext withAheadOfRemote(boolean isAheadOfRemote) {
+        return new RepoContext(this.hasUnstagedChanges, this.hasStagedChanges, this.hasUnpushedCommits, isAheadOfRemote, this.isBehindRemote, this.hasRemote);
+    }
+
+    public RepoContext withBehindRemote(boolean isBehindRemote) {
+        return new RepoContext(this.hasUnstagedChanges, this.hasStagedChanges, this.hasUnpushedCommits, this.isAheadOfRemote, isBehindRemote, this.hasRemote);
+    }
+
+    public RepoContext withUnpushedCommits(boolean hasUnpushedCommits) {
+        return new RepoContext(this.hasUnstagedChanges, this.hasStagedChanges, hasUnpushedCommits, this.isAheadOfRemote, this.isBehindRemote, this.hasRemote);
+    }
+    
+    public RepoContext withRemote(boolean hasRemote) {
+        return new RepoContext(this.hasUnstagedChanges, this.hasStagedChanges, this.hasUnpushedCommits, this.isAheadOfRemote, this.isBehindRemote, hasRemote);
     }
 }

@@ -1,48 +1,45 @@
 package gitv.workflow;
 
 import gitv.engine.ActionKey;
-import gitv.git.RepoContext;
 import gitv.suggestion.DecisionResult;
-import gitv.suggestion.ScoredAction;
+import gitv.suggestion.rule.RuleResponse;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PlanBuilder {
 
     public ExecutionPlan build(DecisionResult decision) {
-        if (decision == null || decision.getSelected() == null) {
+        if (decision == null || decision.getIntents().isEmpty()) {
             return new ExecutionPlan(Collections.emptyList());
         }
 
-        ScoredAction selected = decision.getSelected();
-        ActionKey action = selected.getType();
         List<ExecutionStep> steps = new ArrayList<>();
+        
+        for (ModuleIntent intent : decision.getIntents()) {
+            List<String> reasons = decision.getAppliedRules().stream()
+                .filter(r -> r.getModule() == intent.getId())
+                .map(RuleResponse::getReason)
+                .collect(Collectors.toList());
 
-        boolean hasBlockedPush = decision.getAlternatives().stream()
-                .anyMatch(a -> a.getType() == ActionKey.PUSH && a.isBlocked());
-
-        if (action == ActionKey.NONE) {
-            if (hasBlockedPush) {
-                steps.add(new ExecutionStep(ActionKey.PULL, Collections.singletonList("Fallback PULL for blocked PUSH intent")));
-                steps.add(new ExecutionStep(ActionKey.PUSH, Collections.singletonList("Executing previously blocked PUSH")));
+            switch (intent.getId()) {
+                case STAGE:
+                    steps.add(new ExecutionStep(ActionKey.of("ADD"), reasons));
+                    break;
+                case COMMIT:
+                    steps.add(new ExecutionStep(ActionKey.COMMIT, reasons));
+                    break;
+                case PULL:
+                    steps.add(new ExecutionStep(ActionKey.PULL, reasons));
+                    break;
+                case PUSH:
+                    steps.add(new ExecutionStep(ActionKey.PUSH, reasons));
+                    break;
+                case NONE:
+                    break;
             }
-        } else if (action == ActionKey.COMMIT) {
-            if (hasBlockedPush) {
-                steps.add(new ExecutionStep(ActionKey.PULL, Collections.singletonList("Syncing remote before local commit to prevent topology crash")));
-                steps.add(new ExecutionStep(ActionKey.COMMIT, selected.getReasons()));
-                steps.add(new ExecutionStep(ActionKey.PUSH, Collections.singletonList("Added as follow-up to COMMIT")));
-            } else {
-                steps.add(new ExecutionStep(ActionKey.COMMIT, selected.getReasons()));
-                steps.add(new ExecutionStep(ActionKey.PUSH, Collections.singletonList("Added as follow-up to COMMIT")));
-            }
-        } else if (action == ActionKey.PULL) {
-            steps.add(new ExecutionStep(ActionKey.PULL, selected.getReasons()));
-        } else if (action == ActionKey.PUSH) {
-            steps.add(new ExecutionStep(ActionKey.PUSH, selected.getReasons()));
-        } else {
-            steps.add(new ExecutionStep(action, selected.getReasons()));
         }
 
         return new ExecutionPlan(steps);

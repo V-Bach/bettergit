@@ -51,3 +51,6 @@ target/
 .gradle/
 
 build/
+
+test.txt
+sources.txt
