@@ -9,17 +9,18 @@ public class SafetyValidator {
         if (plan == null || plan.getSteps() == null) {
             return SafetyResult.safe();
         }
-
+        
         RepoContext simulatedContext = context;
 
         for (ExecutionStep step : plan.getSteps()) {
             ActionKey action = step.getAction();
 
-            // 1. Validation Phase against simulated state
+            // 1. Validation Phase
             if (action == ActionKey.COMMIT) {
                 if (!simulatedContext.hasStagedChanges()) {
                     return SafetyResult.failure("Cannot commit without staged changes.");
                 }
+
             } else if (action == ActionKey.PUSH) {
                 if (simulatedContext.isBehindRemote()) {
                     return SafetyResult.failure("Cannot push while behind remote.");
@@ -28,7 +29,9 @@ public class SafetyValidator {
             // Add other invariant checks here as needed
 
             // 2. State Transition Phase
-            if (action == ActionKey.PULL) {
+            if (action == ActionKey.ADD) {
+                simulatedContext = simulatedContext.withStagedChanges(true);
+            }else if (action == ActionKey.PULL) {
                 simulatedContext = simulatedContext.withBehindRemote(false);
             } else if (action == ActionKey.COMMIT) {
                 simulatedContext = simulatedContext.withStagedChanges(false);
