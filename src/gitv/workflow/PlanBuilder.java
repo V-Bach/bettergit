@@ -26,7 +26,7 @@ public class PlanBuilder {
 
             switch (intent.getId()) {
                 case STAGE:
-                    steps.add(new ExecutionStep(ActionKey.of("ADD"), reasons));
+                    steps.add(new ExecutionStep(ActionKey.ADD, reasons));
                     break;
                 case COMMIT:
                     steps.add(new ExecutionStep(ActionKey.COMMIT, reasons));
