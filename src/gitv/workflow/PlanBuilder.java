@@ -17,12 +17,12 @@ public class PlanBuilder {
         }
 
         List<ExecutionStep> steps = new ArrayList<>();
-        
+
         for (ModuleIntent intent : decision.getIntents()) {
             List<String> reasons = decision.getAppliedRules().stream()
-                .filter(r -> r.getModule() == intent.getId())
-                .map(RuleResponse::getReason)
-                .collect(Collectors.toList());
+                    .filter(r -> r.getModule() == intent.getId())
+                    .map(RuleResponse::getReason)
+                    .collect(Collectors.toList());
 
             switch (intent.getId()) {
                 case STAGE:
