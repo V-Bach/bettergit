@@ -106,8 +106,7 @@ public class CommandRouter {
                     break;
                 }
 
-                List<ActionKey> extractActionKeys = steps.stream().map(ExecutionStep::getAction).collect(Collectors.toList());
-                WorkflowResult result = executionEngine.execute(extractActionKeys, context);
+                WorkflowResult result = executionEngine.execute(plan, context);
                 if (result.isSuccess()) {
                     System.out.println("✅ " + result.getMessage());
                 } else {
