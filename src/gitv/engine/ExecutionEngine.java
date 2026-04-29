@@ -29,10 +29,13 @@ public class ExecutionEngine {
                 new ThreadPoolExecutor.AbortPolicy());
     }
 
-    public WorkflowResult execute(List<ActionKey> initialActions, RepoContext repoContext) {
+    public WorkflowResult execute(gitv.workflow.ExecutionPlan plan, RepoContext repoContext) {
         ExecutionLogger logger = new ExecutionLogger(System.getProperty("gitv.debug") != null);
 
-        if (initialActions == null || initialActions.isEmpty()
+        List<ActionKey> initialActions = plan != null && plan.getSteps() != null ? 
+            plan.getSteps().stream().map(gitv.workflow.ExecutionStep::getAction).toList() : Collections.emptyList();
+
+        if (initialActions.isEmpty()
                 || (initialActions.size() == 1 && initialActions.get(0) == ActionKey.NONE)) {
             logger.logFinalSummary(true, "No actions to execute.");
             return new WorkflowResult(true, "No actions to execute.");
@@ -84,7 +87,12 @@ public class ExecutionEngine {
             }
 
             logger.logStart(action);
-            WorkflowResult result = executeActionSafely(workflow, context, logger);
+            WorkflowResult result;
+            if (plan.getMode() == gitv.workflow.ExecutionMode.INTERACTIVE) {
+                result = executeActionInteractive(workflow, context, logger);
+            } else {
+                result = executeActionSafely(workflow, context, logger);
+            }
 
             if (result.getNextAction() != null && !registry.contains(result.getNextAction())) {
                 return failSafely(logger, context, action, "Invalid next action");
@@ -189,6 +197,22 @@ public class ExecutionEngine {
             return new WorkflowResult(false, "Orchestrator interrupted", null, FailureCategory.FATAL_ERROR);
         } catch (ExecutionException e) {
             return mapSandboxException(e.getCause());
+        }
+    }
+
+    private WorkflowResult executeActionInteractive(Workflow workflow, ExecutionContext context, ExecutionLogger logger) {
+        try {
+            WorkflowResult result = workflow.execute(context);
+            // Post-interactive observability hook: Re-scan state
+            gitv.git.ContextBuilder builder = new gitv.git.ContextBuilder();
+            gitv.git.RepoContext newContext = builder.build();
+            logger.logDebug("Post-Interactive State: hasUnstagedChanges=" + newContext.hasUnstagedChanges() + 
+                            ", hasStagedChanges=" + newContext.hasStagedChanges() + 
+                            ", isAhead=" + newContext.isAheadOfRemote() + 
+                            ", isBehind=" + newContext.isBehindRemote());
+            return result;
+        } catch (Exception e) {
+            return mapSandboxException(e);
         }
     }
 
