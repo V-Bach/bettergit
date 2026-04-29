@@ -9,7 +9,7 @@ public class RuleAggregator {
     
     public AggregationResult aggregate(List<RuleResponse> responses) {
         if (responses == null || responses.isEmpty()) {
-            return new AggregationResult(Goal.NONE, Collections.emptyList(), Collections.emptyList());
+            return new AggregationResult(Goal.NONE, Collections.emptyList(), Collections.emptyList(), gitv.workflow.ExecutionMode.AUTO);
         }
 
         // 1. Find highest Tier
@@ -64,22 +64,30 @@ public class RuleAggregator {
                 .map(r -> new ModuleIntent(r.getModule(), r.getOptions(), r.getAnchor(), r.getMode(), r.isMutative()))
                 .collect(Collectors.toList());
 
-        return new AggregationResult(winningGoal, intents, appliedRules);
+        gitv.workflow.ExecutionMode overallMode = intents.stream()
+                .map(ModuleIntent::getMode)
+                .max(Comparator.comparing(gitv.workflow.ExecutionMode::ordinal))
+                .orElse(gitv.workflow.ExecutionMode.AUTO);
+
+        return new AggregationResult(winningGoal, intents, appliedRules, overallMode);
     }
     
     public static class AggregationResult {
         private final Goal goal;
         private final List<ModuleIntent> intents;
         private final List<RuleResponse> appliedRules;
+        private final gitv.workflow.ExecutionMode mode;
 
-        public AggregationResult(Goal goal, List<ModuleIntent> intents, List<RuleResponse> appliedRules) {
+        public AggregationResult(Goal goal, List<ModuleIntent> intents, List<RuleResponse> appliedRules, gitv.workflow.ExecutionMode mode) {
             this.goal = goal;
             this.intents = intents;
             this.appliedRules = appliedRules;
+            this.mode = mode;
         }
 
         public Goal getGoal() { return goal; }
         public List<ModuleIntent> getIntents() { return intents; }
         public List<RuleResponse> getAppliedRules() { return appliedRules; }
+        public gitv.workflow.ExecutionMode getMode() { return mode; }
     }
 }
