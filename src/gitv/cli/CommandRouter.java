@@ -87,14 +87,24 @@ public class CommandRouter {
                     break;
                 }
 
-                if (isConfirm) {
+                if (plan.getMode() == gitv.workflow.ExecutionMode.INTERACTIVE) {
+                    System.out.println("\n⚠️  INTERACTIVE MODE: Gitv will yield terminal control for manual intervention.");
+                } else if (plan.getMode() == gitv.workflow.ExecutionMode.GUARDED) {
+                    System.out.println("\n⚠️  GUARDED MODE: This plan mutates repository state and may halt midway.");
+                    System.out.print("Do you want to proceed? Type 'yes' to confirm: ");
+                    String answer = scanner.nextLine();
+                    if (!answer.trim().equalsIgnoreCase("yes")) {
+                        System.out.println("Aborted.");
+                        break;
+                    }
+                    context = builder.build();
+                } else if (isConfirm) {
                     System.out.print("\nDo you want to run the execution plan? (y/n) ");
                     String answer = scanner.nextLine();
                     if (!answer.trim().equalsIgnoreCase("y")) {
                         System.out.println("Aborted.");
                         break;
                     }
-                    // Re-fetch context to prevent state drift
                     context = builder.build();
                 }
 
@@ -110,7 +120,24 @@ public class CommandRouter {
                 if (result.isSuccess()) {
                     System.out.println("✅ " + result.getMessage());
                 } else {
-                    System.out.println("❌ " + result.getMessage());
+                    System.out.println("❌ Execution Failed: " + result.getMessage());
+                    
+                    System.out.println("\n🔄 Re-evaluating repository state for recovery guidance...");
+                    context = builder.build();
+                    DecisionResult recoveryDecision = engine.decide(context);
+                    
+                    if (recoveryDecision != null && !recoveryDecision.getAppliedRules().isEmpty()) {
+                        System.out.println("\n💡 Suggested Fix (Goal: " + recoveryDecision.getGoal() + "):");
+                        for (gitv.suggestion.rule.RuleResponse rule : recoveryDecision.getAppliedRules()) {
+                            gitv.workflow.Advisory advisory = rule.getAdvisory();
+                            System.out.println("- [" + advisory.severity() + "] " + advisory.message());
+                            if (advisory.actionableFix() != null) {
+                                System.out.println("  Action: run `gitv go` to execute " + advisory.actionableFix());
+                            }
+                        }
+                    } else {
+                        System.out.println("\nNo automatic recovery suggestions available.");
+                    }
                 }
                 break;
             }
