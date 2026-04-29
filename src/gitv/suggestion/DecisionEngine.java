@@ -42,7 +42,7 @@ public class DecisionEngine {
 
         RuleAggregator.AggregationResult result = aggregator.aggregate(responses);
 
-        return new DecisionResult(result.getGoal(), result.getIntents(), result.getAppliedRules());
+        return new DecisionResult(result.getGoal(), result.getIntents(), result.getAppliedRules(), result.getMode());
     }
 }
 
