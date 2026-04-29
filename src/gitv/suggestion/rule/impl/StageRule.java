@@ -18,7 +18,7 @@ public class StageRule implements ActionRule {
                     goal, Tier.WORKFLOW, 90, 
                     ModuleID.STAGE, null, Anchor.PRE_COMMIT, 
                     new gitv.workflow.Advisory("Unstaged changes ready to stage", gitv.workflow.Severity.INFO, gitv.workflow.SuggestionType.HINT, null),
-                    gitv.workflow.ExecutionMode.AUTO, true
+                    gitv.workflow.ExecutionMode.GUARDED, true
                 ));
             }
         }
