@@ -21,7 +21,7 @@ public class PlanBuilder {
         for (ModuleIntent intent : decision.getIntents()) {
             List<String> reasons = decision.getAppliedRules().stream()
                     .filter(r -> r.getModule() == intent.getId())
-                    .map(RuleResponse::getReason)
+                    .map(r -> r.getAdvisory().message())
                     .collect(Collectors.toList());
 
             switch (intent.getId()) {

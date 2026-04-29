@@ -3,6 +3,7 @@ package gitv.suggestion.rule;
 import gitv.workflow.Anchor;
 import gitv.workflow.ModuleID;
 import gitv.workflow.Option;
+import gitv.workflow.Advisory;
 
 import java.util.Collections;
 import java.util.Set;
@@ -14,16 +15,20 @@ public class RuleResponse {
     private final ModuleID module;
     private final Set<Option> options;
     private final Anchor anchor;
-    private final String reason;
+    private final Advisory advisory;
+    private final gitv.workflow.ExecutionMode mode;
+    private final boolean isMutative;
 
-    public RuleResponse(Goal goal, Tier tier, int score, ModuleID module, Set<Option> options, Anchor anchor, String reason) {
+    public RuleResponse(Goal goal, Tier tier, int score, ModuleID module, Set<Option> options, Anchor anchor, Advisory advisory, gitv.workflow.ExecutionMode mode, boolean isMutative) {
         this.goal = goal;
         this.tier = tier;
         this.score = score;
         this.module = module;
         this.options = options != null ? options : Collections.emptySet();
         this.anchor = anchor;
-        this.reason = reason;
+        this.advisory = advisory;
+        this.mode = mode != null ? mode : gitv.workflow.ExecutionMode.AUTO;
+        this.isMutative = isMutative;
     }
 
     public Goal getGoal() { return goal; }
@@ -32,5 +37,7 @@ public class RuleResponse {
     public ModuleID getModule() { return module; }
     public Set<Option> getOptions() { return options; }
     public Anchor getAnchor() { return anchor; }
-    public String getReason() { return reason; }
+    public Advisory getAdvisory() { return advisory; }
+    public gitv.workflow.ExecutionMode getMode() { return mode; }
+    public boolean isMutative() { return isMutative; }
 }

@@ -15,7 +15,8 @@ public class CommitRule implements ActionRule {
             return Optional.of(new RuleResponse(
                 goal, Tier.WORKFLOW, 100, 
                 ModuleID.COMMIT, null, Anchor.COMMIT, 
-                "Changes to commit"
+                new gitv.workflow.Advisory("Changes to commit", gitv.workflow.Severity.INFO, gitv.workflow.SuggestionType.HINT, null),
+                gitv.workflow.ExecutionMode.GUARDED, true
             ));
         }
         return Optional.empty();

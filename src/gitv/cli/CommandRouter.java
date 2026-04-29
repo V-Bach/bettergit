@@ -151,7 +151,7 @@ public class CommandRouter {
         System.out.println("\nReasoning (Goal: " + decisionResult.getGoal() + "):");
         for (gitv.suggestion.rule.RuleResponse rule : decisionResult.getAppliedRules()) {
             System.out.println("- [" + rule.getTier() + "] " + rule.getModule() + " (Score: " + rule.getScore() + ")");
-            System.out.println("    * " + rule.getReason());
+            System.out.println("    * " + rule.getAdvisory().message());
         }
     }
 }

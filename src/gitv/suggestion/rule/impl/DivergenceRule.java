@@ -14,7 +14,8 @@ public class DivergenceRule implements ActionRule {
             return Optional.of(new RuleResponse(
                 Goal.STABILIZE, Tier.EMERGENCY, 1000, 
                 ModuleID.NONE, null, Anchor.SYNC, 
-                "Diverged branch requires manual resolution"
+                new gitv.workflow.Advisory("Diverged branch requires manual resolution", gitv.workflow.Severity.DANGER, gitv.workflow.SuggestionType.BLOCKER, null),
+                gitv.workflow.ExecutionMode.INTERACTIVE, false
             ));
         }
         return Optional.empty();

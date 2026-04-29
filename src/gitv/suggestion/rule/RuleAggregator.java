@@ -46,9 +46,12 @@ public class RuleAggregator {
                         // Merge options if same score
                         Set<gitv.workflow.Option> mergedOptions = new HashSet<>(existing.getOptions());
                         mergedOptions.addAll(r.getOptions());
+                        gitv.workflow.ExecutionMode mergedMode = existing.getMode().ordinal() > r.getMode().ordinal() ? existing.getMode() : r.getMode();
+                        boolean mergedMutative = existing.isMutative() || r.isMutative();
                         moduleMap.put(r.getModule(), new RuleResponse(
                             existing.getGoal(), existing.getTier(), existing.getScore(),
-                            existing.getModule(), mergedOptions, existing.getAnchor(), existing.getReason()
+                            existing.getModule(), mergedOptions, existing.getAnchor(), existing.getAdvisory(),
+                            mergedMode, mergedMutative
                         ));
                     }
                 }
@@ -58,7 +61,7 @@ public class RuleAggregator {
         // 4. Sort modules by Anchor
         List<ModuleIntent> intents = moduleMap.values().stream()
                 .sorted(Comparator.comparing(r -> r.getAnchor().ordinal()))
-                .map(r -> new ModuleIntent(r.getModule(), r.getOptions(), r.getAnchor()))
+                .map(r -> new ModuleIntent(r.getModule(), r.getOptions(), r.getAnchor(), r.getMode(), r.isMutative()))
                 .collect(Collectors.toList());
 
         return new AggregationResult(winningGoal, intents, appliedRules);

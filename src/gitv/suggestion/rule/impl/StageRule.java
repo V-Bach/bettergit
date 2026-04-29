@@ -17,7 +17,8 @@ public class StageRule implements ActionRule {
                 return Optional.of(new RuleResponse(
                     goal, Tier.WORKFLOW, 90, 
                     ModuleID.STAGE, null, Anchor.PRE_COMMIT, 
-                    "Unstaged changes ready to stage"
+                    new gitv.workflow.Advisory("Unstaged changes ready to stage", gitv.workflow.Severity.INFO, gitv.workflow.SuggestionType.HINT, null),
+                    gitv.workflow.ExecutionMode.AUTO, true
                 ));
             }
         }

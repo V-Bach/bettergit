@@ -14,7 +14,8 @@ public class PullRule implements ActionRule {
             return Optional.of(new RuleResponse(
                 Goal.SYNCHRONIZE, Tier.WORKFLOW, 150, 
                 ModuleID.PULL, null, Anchor.SYNC, 
-                "Behind remote, pull required"
+                new gitv.workflow.Advisory("Behind remote, pull required", gitv.workflow.Severity.WARNING, gitv.workflow.SuggestionType.FIX, null),
+                gitv.workflow.ExecutionMode.GUARDED, true
             ));
         }
         return Optional.empty();
