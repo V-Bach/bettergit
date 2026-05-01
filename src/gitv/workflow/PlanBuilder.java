@@ -38,8 +38,14 @@ public class PlanBuilder {
                 case PULL:
                     steps.add(new ExecutionStep(ActionKey.PULL, reasons));
                     break;
+                case PULL_REBASE:
+                    steps.add(new ExecutionStep(ActionKey.PULL_REBASE, reasons));
+                    break;
                 case PUSH:
                     steps.add(new ExecutionStep(ActionKey.PUSH, reasons));
+                    break;
+                case STASH:
+                    steps.add(new ExecutionStep(ActionKey.STASH, reasons));
                     break;
                 case NONE:
                     break;

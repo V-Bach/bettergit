@@ -18,6 +18,9 @@ public class SignalLayer {
         if (context.isAheadOfRemote() && context.isBehindRemote()) {
             signals.add(Signal.DIVERGED);
         }
+        if (context.hasUnmergedPaths()) {
+            signals.add(Signal.UNMERGED_PATHS);
+        }
         
         return signals;
     }

@@ -6,5 +6,6 @@ public enum Signal {
     AHEAD_REMOTE,
     BEHIND_REMOTE,
     NO_REMOTE,
-    DIVERGED
+    DIVERGED,
+    UNMERGED_PATHS
 }

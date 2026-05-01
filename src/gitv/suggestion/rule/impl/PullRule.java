@@ -13,9 +13,9 @@ public class PullRule implements ActionRule {
         if (signals.contains(Signal.BEHIND_REMOTE) && !signals.contains(Signal.NO_REMOTE)) {
             return Optional.of(new RuleResponse(
                 Goal.SYNCHRONIZE, Tier.WORKFLOW, 150, 
-                ModuleID.PULL, null, Anchor.SYNC, 
-                new gitv.workflow.Advisory("Behind remote, pull required", gitv.workflow.Severity.WARNING, gitv.workflow.SuggestionType.FIX, null),
-                gitv.workflow.ExecutionMode.GUARDED, true
+                ModuleID.PULL_REBASE, null, Anchor.SYNC, 
+                new gitv.workflow.Advisory("Behind remote, pull with rebase recommended", gitv.workflow.Severity.WARNING, gitv.workflow.SuggestionType.FIX, null),
+                gitv.workflow.ExecutionMode.INTERACTIVE, true
             ));
         }
         return Optional.empty();

@@ -21,8 +21,10 @@ public class Main {
         registry.register(ActionKey.COMMIT, new CommitWorkflow(git));
         registry.register(ActionKey.PUSH, new PushWorkflow(git));
         registry.register(ActionKey.PULL, new PullWorkflow(git));
+        registry.register(ActionKey.PULL_REBASE, new gitv.workflow.basic.PullRebaseWorkflow(git));
         registry.register(ActionKey.SYNC, new SyncWorkflow(git));
         registry.register(ActionKey.ADD, new gitv.workflow.basic.AddWorkflow(git));
+        registry.register(ActionKey.STASH, new gitv.workflow.basic.StashWorkflow(git));
 
         registry.register(ActionKey.of("DEPLOY"), new Workflow() {
             @Override

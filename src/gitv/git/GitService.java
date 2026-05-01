@@ -96,6 +96,16 @@ public class GitService {
         return result.isSuccess();
     }
 
+    public boolean pullRebase() {
+        CommandResult result = runCommand("git", "pull", "--rebase");
+        return result.isSuccess();
+    }
+
+    public boolean stash() {
+        CommandResult result = runCommand("git", "stash");
+        return result.isSuccess();
+    }
+
     public boolean hasMergeConflicts() {
         CommandResult result = runCommand("git", "ls-files", "-u");
         return result.isSuccess() && !result.output.trim().isEmpty();
@@ -141,6 +151,21 @@ public class GitService {
         String[] lines = status.split("\\r?\\n");
         if (lines.length > 0 && lines[0].startsWith("##")) {
             return lines[0].contains("ahead ");
+        }
+        return false;
+    }
+
+    public boolean hasUnmergedPaths(String status) {
+        if (status == null || status.trim().isEmpty()) return false;
+        String[] lines = status.split("\\r?\\n");
+        for (String line : lines) {
+            if (line.startsWith("##")) continue;
+            if (line.length() > 1) {
+                String xy = line.substring(0, 2);
+                if (xy.equals("DD") || xy.equals("AU") || xy.equals("UD") || xy.equals("UA") || xy.equals("DU") || xy.equals("AA") || xy.equals("UU")) {
+                    return true;
+                }
+            }
         }
         return false;
     }

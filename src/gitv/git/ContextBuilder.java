@@ -19,7 +19,8 @@ public class ContextBuilder {
         boolean isBehindRemote = gitService.isBehindRemote(status);
         boolean hasUnpushedCommits = isAheadOfRemote; // unify with isAheadOfRemote logic
         boolean hasRemote = gitService.hasRemote();
+        boolean hasUnmergedPaths = gitService.hasUnmergedPaths(status);
 
-        return new RepoContext(hasUnstagedChanges, hasStagedChanges, hasUnpushedCommits, isAheadOfRemote, isBehindRemote, hasRemote);
+        return new RepoContext(hasUnstagedChanges, hasStagedChanges, hasUnpushedCommits, isAheadOfRemote, isBehindRemote, hasRemote, hasUnmergedPaths);
     }
 }

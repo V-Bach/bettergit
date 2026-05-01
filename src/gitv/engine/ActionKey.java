@@ -11,6 +11,8 @@ public final class ActionKey {
     public static final ActionKey PULL = ActionKey.ofUnsafe("PULL");
     public static final ActionKey SYNC = ActionKey.ofUnsafe("SYNC");
     public static final ActionKey ADD = ActionKey.ofUnsafe("ADD");
+    public static final ActionKey STASH = ActionKey.ofUnsafe("STASH");
+    public static final ActionKey PULL_REBASE = ActionKey.ofUnsafe("PULL_REBASE");
     public static final ActionKey NONE = ActionKey.ofUnsafe("NONE");
 
     private final String name;

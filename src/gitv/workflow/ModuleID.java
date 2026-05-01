@@ -5,5 +5,7 @@ public enum ModuleID {
     STAGE,
     COMMIT,
     PUSH,
+    STASH,
+    PULL_REBASE,
     NONE
 }

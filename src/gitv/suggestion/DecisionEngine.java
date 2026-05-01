@@ -26,6 +26,8 @@ public class DecisionEngine {
         this.rules.add(new PullRule());
         this.rules.add(new PushRule());
         this.rules.add(new DivergenceRule());
+        this.rules.add(new StashRule());
+        this.rules.add(new ConflictRule());
 
         this.signalLayer = new SignalLayer();
         this.aggregator = new RuleAggregator();
