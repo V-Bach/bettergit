@@ -6,6 +6,10 @@ import gitv.git.RepoContext;
 public class SafetyValidator {
 
     public SafetyResult validate(ExecutionPlan plan, RepoContext context) {
+        if (context != null && context.isLocked()) {
+            return SafetyResult.failure("Repository is locked: " + context.getLockReason());
+        }
+
         if (plan == null || plan.getSteps() == null) {
             return SafetyResult.safe();
         }

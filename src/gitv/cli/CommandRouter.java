@@ -45,6 +45,9 @@ public class CommandRouter {
                 System.out.println("Unstaged Changes: " + context.hasUnstagedChanges());
                 System.out.println("Staged Changes: " + context.hasStagedChanges());
                 System.out.println("Unpushed Commits: " + context.hasUnpushedCommits());
+                if (context.isLocked()) {
+                    System.out.println("🔒 Repository is LOCKED: " + context.getLockReason());
+                }
 
                 DecisionEngine engine = new DecisionEngine();
                 DecisionResult result = engine.decide(context);

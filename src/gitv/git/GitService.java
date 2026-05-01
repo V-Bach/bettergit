@@ -5,7 +5,7 @@ import java.io.*;
 public class GitService {
     private File repoRoot = null;
 
-    private synchronized File getRepoRoot() {
+    public synchronized File getRepoRoot() {
         if (repoRoot != null) {
             return repoRoot;
         }
