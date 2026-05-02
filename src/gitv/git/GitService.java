@@ -33,6 +33,11 @@ public class GitService {
         return result.isSuccess() ? result.output.trim() : "";
     }
 
+    public String getHeadHash() {
+        CommandResult result = runCommand("git", "rev-parse", "HEAD");
+        return result.isSuccess() ? result.output.trim() : "EMPTY";
+    }
+
     public String getStatus() {
         CommandResult result = runCommand("git", "status", "--porcelain=v1", "-b");
         return result.isSuccess() ? result.output : "";

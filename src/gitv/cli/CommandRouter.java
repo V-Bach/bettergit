@@ -70,12 +70,46 @@ public class CommandRouter {
                     break;
                 }
 
+                String currentHash = git.getHeadHash();
+                gitv.engine.StateManager stateManager = new gitv.engine.StateManager(git.getRepoRoot());
+                gitv.engine.ExecutionState recoveredState = null;
+                
+                if (stateManager.hasState()) {
+                    gitv.engine.ExecutionState state = stateManager.loadState();
+                    if (state != null && state.getPlannedActions() != null && state.getCompletedSteps().size() < state.getPlannedActions().size()) {
+                        if (currentHash.equals(state.getInitialHeadHash())) {
+                            System.out.print("\n⚠️ Found an interrupted execution plan. Resume? (y/n) ");
+                            String answer = scanner.nextLine();
+                            if (answer.trim().equalsIgnoreCase("y")) {
+                                recoveredState = state;
+                            } else {
+                                stateManager.clearState();
+                            }
+                        } else {
+                            System.out.println("⚠️ Repository state changed since last crash. Discarding old state.");
+                            stateManager.clearState();
+                        }
+                    } else {
+                        stateManager.clearState();
+                    }
+                }
+
                 ContextBuilder builder = new ContextBuilder();
                 RepoContext context = builder.build();
 
-                DecisionResult decisionResult = engine.decide(context);
-                gitv.workflow.PlanBuilder planBuilder = new gitv.workflow.PlanBuilder();
-                gitv.workflow.ExecutionPlan plan = planBuilder.build(decisionResult);
+                gitv.workflow.ExecutionPlan plan;
+                DecisionResult decisionResult = null;
+
+                if (recoveredState != null) {
+                    List<ExecutionStep> steps = recoveredState.getPlannedActions().stream()
+                        .map(key -> new ExecutionStep(key, Collections.singletonList("Recovered from interrupted plan")))
+                        .collect(Collectors.toList());
+                    plan = new gitv.workflow.ExecutionPlan(steps, gitv.workflow.ExecutionMode.AUTO);
+                } else {
+                    decisionResult = engine.decide(context);
+                    gitv.workflow.PlanBuilder planBuilder = new gitv.workflow.PlanBuilder();
+                    plan = planBuilder.build(decisionResult);
+                }
 
                 printPlan(plan);
                 printReasoning(decisionResult);
@@ -119,10 +153,12 @@ public class CommandRouter {
                     break;
                 }
 
-                String executionId = java.util.UUID.randomUUID().toString();
+                String executionId = recoveredState != null && recoveredState.getExecutionId() != null 
+                        ? recoveredState.getExecutionId() 
+                        : java.util.UUID.randomUUID().toString();
                 java.io.File logFile = new java.io.File(git.getRepoRoot(), ".git/gitv/execution.log");
 
-                WorkflowResult result = executionEngine.execute(plan, context, executionId, logFile);
+                WorkflowResult result = executionEngine.execute(plan, context, executionId, logFile, stateManager, recoveredState, currentHash);
                 if (result.isSuccess()) {
                     System.out.println("✅ " + result.getMessage());
                 } else {

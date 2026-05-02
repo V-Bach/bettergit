@@ -29,7 +29,7 @@ public class ExecutionEngine {
                 new ThreadPoolExecutor.AbortPolicy());
     }
 
-    public WorkflowResult execute(gitv.workflow.ExecutionPlan plan, RepoContext repoContext, String executionId, java.io.File logFile) {
+    public WorkflowResult execute(gitv.workflow.ExecutionPlan plan, RepoContext repoContext, String executionId, java.io.File logFile, StateManager stateManager, ExecutionState executionState, String currentHeadHash) {
         ExecutionLogger logger = new ExecutionLogger(System.getProperty("gitv.debug") != null, executionId, logFile);
 
         logger.logDebug(String.format("Pipeline Started. Repo State: Unstaged=%b, Staged=%b, UnpushedCommits=%b, Ahead=%b, Behind=%b", 
@@ -42,6 +42,11 @@ public class ExecutionEngine {
                 || (initialActions.size() == 1 && initialActions.get(0) == ActionKey.NONE)) {
             logger.logFinalSummary(true, "No actions to execute.");
             return new WorkflowResult(true, "No actions to execute.");
+        }
+
+        if (executionState == null && stateManager != null) {
+            executionState = new ExecutionState(executionId, currentHeadHash, new ArrayList<>(initialActions), new ArrayList<>());
+            stateManager.saveState(executionState);
         }
 
         logger.logDebug("Generated Plan: " + initialActions.toString());
@@ -73,6 +78,11 @@ public class ExecutionEngine {
 
             if (action == ActionKey.NONE)
                 continue;
+
+            if (executionState != null && executionState.getCompletedSteps().contains(action)) {
+                logger.logDebug("Idempotency Guard: Skipping already completed step -> " + action);
+                continue;
+            }
 
             Workflow workflow = registry.get(action);
             if (workflow == null) {
@@ -107,6 +117,11 @@ public class ExecutionEngine {
                 logger.logSuccess(action, result.getMessage());
                 executionCount.remove(action);
                 retryCount.remove(action);
+                
+                if (executionState != null && stateManager != null) {
+                    executionState.getCompletedSteps().add(action);
+                    stateManager.saveState(executionState);
+                }
             } else {
                 FailureCategory category = result.getFailureCategory();
                 logger.logFailure(action, category, result.getMessage());
@@ -145,6 +160,9 @@ public class ExecutionEngine {
             }
         }
 
+        if (stateManager != null) {
+            stateManager.clearState();
+        }
         logger.logFinalSummary(true, "All actions executed successfully.");
         return new WorkflowResult(true, "All actions executed successfully.");
     }

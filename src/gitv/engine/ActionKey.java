@@ -32,6 +32,13 @@ public final class ActionKey {
         return ofUnsafe(name);
     }
 
+    public static ActionKey get(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return null;
+        }
+        return INTERN_POOL.get(name.trim().toUpperCase());
+    }
+
     private static ActionKey ofUnsafe(String name) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Action name cannot be empty");
