@@ -8,7 +8,7 @@ import gitv.workflow.Advisory;
 import java.util.Collections;
 import java.util.Set;
 
-public class RuleResponse {
+public class RuleResponse implements Comparable<RuleResponse> {
     private final Goal goal;
     private final Tier tier;
     private final int score;
@@ -40,4 +40,18 @@ public class RuleResponse {
     public Advisory getAdvisory() { return advisory; }
     public gitv.workflow.ExecutionMode getMode() { return mode; }
     public boolean isMutative() { return isMutative; }
+
+    @Override
+    public int compareTo(RuleResponse o) {
+        // 1. Higher Tier first
+        int tierCompare = Integer.compare(o.tier.getLevel(), this.tier.getLevel());
+        if (tierCompare != 0) return tierCompare;
+
+        // 2. Higher Score first
+        int scoreCompare = Integer.compare(o.score, this.score);
+        if (scoreCompare != 0) return scoreCompare;
+
+        // 3. Absolute Tie-breaker: ModuleID alphabetical order
+        return this.module.name().compareTo(o.module.name());
+    }
 }
