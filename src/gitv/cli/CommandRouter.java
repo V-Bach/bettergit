@@ -119,11 +119,15 @@ public class CommandRouter {
                     break;
                 }
 
-                WorkflowResult result = executionEngine.execute(plan, context);
+                String executionId = java.util.UUID.randomUUID().toString();
+                java.io.File logFile = new java.io.File(git.getRepoRoot(), ".git/gitv/execution.log");
+
+                WorkflowResult result = executionEngine.execute(plan, context, executionId, logFile);
                 if (result.isSuccess()) {
                     System.out.println("✅ " + result.getMessage());
                 } else {
                     System.out.println("❌ Execution Failed: " + result.getMessage());
+                    System.out.println("   (Check .git/gitv/execution.log for full details)");
                     
                     System.out.println("\n🔄 Re-evaluating repository state for recovery guidance...");
                     context = builder.build();
