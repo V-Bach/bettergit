@@ -27,7 +27,8 @@ public class RuleAggregator {
         }
 
         Goal winningGoal = goalScores.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
+                .max(Map.Entry.<Goal, Integer>comparingByValue()
+                     .thenComparing(e -> e.getKey().name()))
                 .map(Map.Entry::getKey)
                 .orElse(Goal.NONE);
 
@@ -58,9 +59,12 @@ public class RuleAggregator {
             }
         }
 
+        Collections.sort(appliedRules);
+
         // 4. Sort modules by Anchor
         List<ModuleIntent> intents = moduleMap.values().stream()
-                .sorted(Comparator.comparing(r -> r.getAnchor().ordinal()))
+                .sorted(Comparator.comparing((RuleResponse r) -> r.getAnchor().ordinal())
+                        .thenComparing(r -> r.getModule().name()))
                 .map(r -> new ModuleIntent(r.getModule(), r.getOptions(), r.getAnchor(), r.getMode(), r.isMutative()))
                 .collect(Collectors.toList());
 
