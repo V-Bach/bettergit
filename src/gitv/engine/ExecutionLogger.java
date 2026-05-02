@@ -1,8 +1,17 @@
 package gitv.engine;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class ExecutionLogger {
     private final boolean debugMode;
     private final long startTime;
+    private final String executionId;
+    private final File logFile;
     private int totalSteps;
     private int totalRetries;
 
@@ -15,44 +24,74 @@ public class ExecutionLogger {
     private static final String CYAN = "\u001B[36m";
     private static final String BOLD = "\u001B[1m";
 
-    public ExecutionLogger(boolean debugMode) {
+    public ExecutionLogger(boolean debugMode, String executionId, File logFile) {
         this.debugMode = debugMode;
         this.startTime = System.currentTimeMillis();
+        this.executionId = executionId;
+        this.logFile = logFile;
         this.totalSteps = 0;
         this.totalRetries = 0;
+
+        if (logFile != null) {
+            logFile.getParentFile().mkdirs();
+        }
+    }
+
+    private void appendToFile(String message) {
+        if (logFile == null) return;
+        String cleanMessage = message.replaceAll("\u001B\\[[;\\d]*m", "");
+        String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+        try (PrintWriter out = new PrintWriter(new FileWriter(logFile, true))) {
+            out.printf("[%s] [%s] %s%n", timestamp, executionId, cleanMessage);
+        } catch (IOException e) {
+            // Ignore file logging errors to prevent breaking CLI flow
+        }
     }
 
     public void logStart(ActionKey action) {
-        System.out.printf("%s▶%s %s%s%s%n", BLUE, RESET, BOLD, action, RESET);
+        String msg = String.format("%s▶%s %s%s%s", BLUE, RESET, BOLD, action, RESET);
+        System.out.println(msg);
+        appendToFile(String.format("Executing Step: %s", action));
     }
 
     public void logSuccess(ActionKey action, String message) {
         this.totalSteps++;
+        String msg;
         if (debugMode && message != null && !message.isEmpty()) {
-            System.out.printf("   %s✓%s Success - %s%n", GREEN, RESET, message);
+            msg = String.format("   %s✓%s Success - %s", GREEN, RESET, message);
         } else {
-            System.out.printf("   %s✓%s Success%n", GREEN, RESET);
+            msg = String.format("   %s✓%s Success", GREEN, RESET);
         }
+        System.out.println(msg);
+        appendToFile(String.format("Step %s Status: Success%s", action, (message != null && !message.isEmpty() ? " - " + message : "")));
     }
 
     public void logFailure(ActionKey action, FailureCategory type, String message) {
         String color = (type == FailureCategory.FATAL_ERROR) ? RED : YELLOW;
-        System.out.printf("   %s✗%s %s[%s]%s Failed: %s%n", color, RESET, color, type, RESET, message);
+        String msg = String.format("   %s✗%s %s[%s]%s Failed: %s", color, RESET, color, type, RESET, message);
+        System.out.println(msg);
+        appendToFile(String.format("Step %s Status: Failed [%s] - %s", action, type, message));
     }
 
     public void logRetry(ActionKey action, int attempt, long delayMs) {
         this.totalRetries++;
-        System.out.printf("   %s↻%s Retrying in %dms (Attempt %d)...%n", YELLOW, RESET, delayMs, attempt);
+        String msg = String.format("   %s↻%s Retrying in %dms (Attempt %d)...", YELLOW, RESET, delayMs, attempt);
+        System.out.println(msg);
+        appendToFile(String.format("Retrying %s in %dms (Attempt %d)", action, delayMs, attempt));
     }
 
     public void logRecoveryInjection(ActionKey failedAction, ActionKey recoveryAction) {
-        System.out.printf("   %s↳%s Injecting recovery action: %s%s%n", CYAN, RESET, BOLD, recoveryAction, RESET);
+        String msg = String.format("   %s↳%s Injecting recovery action: %s%s", CYAN, RESET, BOLD, recoveryAction, RESET);
+        System.out.println(msg);
+        appendToFile(String.format("Injecting recovery action %s for %s", recoveryAction, failedAction));
     }
 
     public void logDebug(String message) {
         if (debugMode) {
-            System.out.printf("   %s[DEBUG]%s %s%n", CYAN, RESET, message);
+            String msg = String.format("   %s[DEBUG]%s %s", CYAN, RESET, message);
+            System.out.println(msg);
         }
+        appendToFile(String.format("[DEBUG] %s", message));
     }
 
     public void logFinalSummary(boolean isSuccess, String resultMessage) {
@@ -66,5 +105,8 @@ public class ExecutionLogger {
         System.out.println("Steps    : " + totalSteps + " successful steps");
         System.out.println("Retries  : " + totalRetries);
         System.out.println(headerColor + "=========================" + RESET);
+
+        appendToFile(String.format("Pipeline Finished - Result: %s (%s), Duration: %dms", 
+                     (isSuccess ? "Success" : "Failed"), resultMessage, duration));
     }
 }
