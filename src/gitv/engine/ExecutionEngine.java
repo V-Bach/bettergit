@@ -29,8 +29,11 @@ public class ExecutionEngine {
                 new ThreadPoolExecutor.AbortPolicy());
     }
 
-    public WorkflowResult execute(gitv.workflow.ExecutionPlan plan, RepoContext repoContext) {
-        ExecutionLogger logger = new ExecutionLogger(System.getProperty("gitv.debug") != null);
+    public WorkflowResult execute(gitv.workflow.ExecutionPlan plan, RepoContext repoContext, String executionId, java.io.File logFile) {
+        ExecutionLogger logger = new ExecutionLogger(System.getProperty("gitv.debug") != null, executionId, logFile);
+
+        logger.logDebug(String.format("Pipeline Started. Repo State: Unstaged=%b, Staged=%b, UnpushedCommits=%b, Ahead=%b, Behind=%b", 
+                repoContext.hasUnstagedChanges(), repoContext.hasStagedChanges(), repoContext.hasUnpushedCommits(), repoContext.isAheadOfRemote(), repoContext.isBehindRemote()));
 
         List<ActionKey> initialActions = plan != null && plan.getSteps() != null ? 
             plan.getSteps().stream().map(gitv.workflow.ExecutionStep::getAction).toList() : Collections.emptyList();
@@ -40,6 +43,8 @@ public class ExecutionEngine {
             logger.logFinalSummary(true, "No actions to execute.");
             return new WorkflowResult(true, "No actions to execute.");
         }
+
+        logger.logDebug("Generated Plan: " + initialActions.toString());
 
         ExecutionContext context = new ExecutionContext(repoContext);
         Deque<ActionKey> queue = new LinkedList<>();
