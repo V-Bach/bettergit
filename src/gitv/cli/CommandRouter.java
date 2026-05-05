@@ -101,7 +101,9 @@ public class CommandRouter {
                 DecisionResult decisionResult = null;
 
                 if (recoveredState != null) {
+                    final List<ActionKey> completed = recoveredState.getCompletedSteps();
                     List<ExecutionStep> steps = recoveredState.getPlannedActions().stream()
+                        .filter(key -> !completed.contains(key))
                         .map(key -> new ExecutionStep(key, Collections.singletonList("Recovered from interrupted plan")))
                         .collect(Collectors.toList());
                     plan = new gitv.workflow.ExecutionPlan(steps, gitv.workflow.ExecutionMode.AUTO);
