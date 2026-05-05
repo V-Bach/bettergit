@@ -19,7 +19,7 @@ public class ContextBuilder {
         boolean hasUnstagedChanges = gitService.hasUnstagedChanges(status);
         boolean isAheadOfRemote = gitService.isAheadOfRemote(status);
         boolean isBehindRemote = gitService.isBehindRemote(status);
-        boolean hasUnpushedCommits = isAheadOfRemote; // unify with isAheadOfRemote logic
+        boolean hasUnpushedCommits = gitService.hasUnpushedCommits(status);
         boolean hasRemote = gitService.hasRemote();
         boolean hasUnmergedPaths = gitService.hasUnmergedPaths(status);
 
