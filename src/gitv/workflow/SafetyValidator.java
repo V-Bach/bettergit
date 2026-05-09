@@ -11,13 +11,20 @@ public class SafetyValidator {
         }
 
         if (plan == null || plan.getSteps() == null) {
-            return SafetyResult.safe();
+            return SafetyResult.safe(RiskLevel.NONE);
         }
         
         RepoContext simulatedContext = context;
+        RiskLevel maxRisk = RiskLevel.NONE;
 
         for (ExecutionStep step : plan.getSteps()) {
             ActionKey action = step.getAction();
+
+            // Risk Assessment Phase
+            RiskLevel stepRisk = assessRisk(action);
+            if (stepRisk.compareTo(maxRisk) > 0) {
+                maxRisk = stepRisk;
+            }
 
             // 1. Validation Phase
             if (action == ActionKey.COMMIT) {
@@ -46,6 +53,17 @@ public class SafetyValidator {
             }
         }
 
-        return SafetyResult.safe();
+        return SafetyResult.safe(maxRisk);
+    }
+
+    private RiskLevel assessRisk(ActionKey action) {
+        if (action == ActionKey.PUSH || action == ActionKey.PULL_REBASE) {
+            return RiskLevel.HIGH;
+        } else if (action == ActionKey.COMMIT || action == ActionKey.PULL || action == ActionKey.STASH) {
+            return RiskLevel.MEDIUM;
+        } else if (action == ActionKey.ADD || action == ActionKey.NONE) {
+            return RiskLevel.LOW;
+        }
+        return RiskLevel.NONE;
     }
 }
