@@ -14,7 +14,7 @@ public class PullRule implements ActionRule {
             return Optional.of(new RuleResponse(
                 Goal.SYNCHRONIZE, Tier.WORKFLOW, 150, 
                 ModuleID.PULL_REBASE, null, Anchor.SYNC, 
-                new gitv.workflow.Advisory("Behind remote, pull with rebase recommended", gitv.workflow.Severity.WARNING, gitv.workflow.SuggestionType.FIX, null),
+                new gitv.workflow.Advisory("Your teammates have uploaded new code. You need to download it before making changes.", gitv.workflow.Severity.WARNING, gitv.workflow.SuggestionType.FIX, null),
                 gitv.workflow.ExecutionMode.INTERACTIVE, true
             ));
         }

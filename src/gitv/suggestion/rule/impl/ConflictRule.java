@@ -14,7 +14,7 @@ public class ConflictRule implements ActionRule {
             return Optional.of(new RuleResponse(
                 Goal.STABILIZE, Tier.EMERGENCY, 2000, 
                 ModuleID.NONE, null, Anchor.SYNC, 
-                new gitv.workflow.Advisory("Merge conflicts detected. Please resolve them manually, stage the files, and run 'git rebase --continue' or 'git commit'.", gitv.workflow.Severity.DANGER, gitv.workflow.SuggestionType.BLOCKER, null),
+                new gitv.workflow.Advisory("There is a clash between your edits and someone else's. We need to manually decide which edits to keep before we can proceed.", gitv.workflow.Severity.DANGER, gitv.workflow.SuggestionType.BLOCKER, null),
                 gitv.workflow.ExecutionMode.INTERACTIVE, false
             ));
         }

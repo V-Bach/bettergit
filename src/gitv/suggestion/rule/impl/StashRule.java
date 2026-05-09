@@ -15,7 +15,7 @@ public class StashRule implements ActionRule {
             return Optional.of(new RuleResponse(
                 Goal.STABILIZE, Tier.WORKFLOW, 200, 
                 ModuleID.STASH, null, Anchor.STASH_SAVE, 
-                new gitv.workflow.Advisory("Unstaged changes detected before sync. Recommend stashing.", gitv.workflow.Severity.WARNING, gitv.workflow.SuggestionType.FIX, ActionKey.STASH),
+                new gitv.workflow.Advisory("You have unsaved edits that conflict with downloading new code. Gitv will temporarily set them aside (stash) while we sync.", gitv.workflow.Severity.WARNING, gitv.workflow.SuggestionType.FIX, ActionKey.STASH),
                 gitv.workflow.ExecutionMode.GUARDED, true
             ));
         }

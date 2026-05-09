@@ -14,7 +14,7 @@ public class DivergenceRule implements ActionRule {
             return Optional.of(new RuleResponse(
                 Goal.STABILIZE, Tier.EMERGENCY, 1000, 
                 ModuleID.NONE, null, Anchor.SYNC, 
-                new gitv.workflow.Advisory("Diverged branch requires manual resolution", gitv.workflow.Severity.DANGER, gitv.workflow.SuggestionType.BLOCKER, null),
+                new gitv.workflow.Advisory("Your saved edits and your teammates' uploaded edits have split into two different paths. They must be merged manually.", gitv.workflow.Severity.DANGER, gitv.workflow.SuggestionType.BLOCKER, null),
                 gitv.workflow.ExecutionMode.INTERACTIVE, false
             ));
         }

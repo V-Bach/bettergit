@@ -15,7 +15,7 @@ public class CommitRule implements ActionRule {
             return Optional.of(new RuleResponse(
                 goal, Tier.WORKFLOW, 100, 
                 ModuleID.COMMIT, null, Anchor.COMMIT, 
-                new gitv.workflow.Advisory("Changes to commit", gitv.workflow.Severity.INFO, gitv.workflow.SuggestionType.HINT, null),
+                new gitv.workflow.Advisory("Your edits are prepared and ready to be saved permanently.", gitv.workflow.Severity.INFO, gitv.workflow.SuggestionType.HINT, null),
                 gitv.workflow.ExecutionMode.GUARDED, true
             ));
         }

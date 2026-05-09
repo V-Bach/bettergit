@@ -15,7 +15,7 @@ public class PushRule implements ActionRule {
                 return Optional.of(new RuleResponse(
                     Goal.SYNCHRONIZE, Tier.WORKFLOW, 80, 
                     ModuleID.PUSH, null, Anchor.POST_COMMIT, 
-                    new gitv.workflow.Advisory("Changes to push", gitv.workflow.Severity.INFO, gitv.workflow.SuggestionType.HINT, null),
+                    new gitv.workflow.Advisory("You have saved work on your computer that hasn't been uploaded to your team yet.", gitv.workflow.Severity.INFO, gitv.workflow.SuggestionType.HINT, null),
                     gitv.workflow.ExecutionMode.GUARDED, true
                 ));
             }
