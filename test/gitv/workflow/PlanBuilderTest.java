@@ -2,7 +2,9 @@ package gitv.workflow;
 
 import gitv.engine.ActionKey;
 import gitv.suggestion.DecisionResult;
-import gitv.suggestion.ScoredAction;
+import gitv.suggestion.rule.Goal;
+import gitv.suggestion.rule.RuleResponse;
+import gitv.suggestion.rule.Tier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PlanBuilderTest {
 
@@ -22,28 +25,17 @@ class PlanBuilderTest {
         planBuilder = new PlanBuilder();
     }
 
-    /**
-     * Helper to mock out a DecisionResult without bleeding context.
-     * Note: In the refactored architecture, RepoContext is no longer 
-     * read by PlanBuilder. build() parameters can safely accept null context.
-     */
-    private DecisionResult createDecision(ActionKey selected, ScoredAction... alternatives) {
-        ScoredAction selectedAction = (selected == ActionKey.NONE) 
-                                      ? ScoredAction.none() 
-                                      : new ScoredAction(selected, 1.0, 100, false, Collections.emptyList());
-        return new DecisionResult(selectedAction, Arrays.asList(alternatives));
+    private DecisionResult createDecision(ModuleIntent... intents) {
+        return new DecisionResult(
+                Goal.NONE,
+                Arrays.asList(intents),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                ExecutionMode.AUTO,
+                Collections.emptySet()
+        );
     }
 
-    /**
-     * Helper to reliably generate the blocked intent signature.
-     */
-    private ScoredAction blockedPush() {
-        return ScoredAction.blocked(ActionKey.PUSH, "Behind remote limits");
-    }
-
-    /**
-     * Extracts ActionKeys from final steps for strict Sequence Validation.
-     */
     private List<ActionKey> extractActions(ExecutionPlan plan) {
         return plan.getSteps().stream()
                 .map(ExecutionStep::getAction)
@@ -53,65 +45,49 @@ class PlanBuilderTest {
     // --- ✅ REQUIRED TEST CASES (ARCHITECTURAL GUARDS) ---
 
     @Test
-    void shouldReturnEmptyPlan_whenNoActionSelected() {
-        DecisionResult decision = createDecision(ActionKey.NONE);
-        // Null context proves context-less execution
+    void shouldReturnEmptyPlan_whenNoIntents() {
+        DecisionResult decision = createDecision();
         ExecutionPlan plan = planBuilder.build(decision);
         
         List<ActionKey> actions = extractActions(plan);
         assertEquals(Collections.emptyList(), actions, 
-                "Plan should be completely empty for NONE with no blocked alternatives");
+                "Plan should be completely empty when no intents are provided");
     }
 
     @Test
-    void shouldCommitAndPush_whenCommitSelected() {
-        DecisionResult decision = createDecision(ActionKey.COMMIT);
+    void shouldMapIntentsDirectlyToActions() {
+        DecisionResult decision = createDecision(
+            new ModuleIntent(ModuleID.STAGE, Collections.emptySet(), gitv.suggestion.rule.Anchor.PRE, ExecutionMode.AUTO, false),
+            new ModuleIntent(ModuleID.COMMIT, Collections.emptySet(), gitv.suggestion.rule.Anchor.PRIMARY, ExecutionMode.AUTO, false)
+        );
         ExecutionPlan plan = planBuilder.build(decision);
 
         List<ActionKey> actions = extractActions(plan);
-        assertEquals(Arrays.asList(ActionKey.COMMIT, ActionKey.PUSH), actions,
-                "Clean commit intent should map to [COMMIT, PUSH]");
+        assertEquals(Arrays.asList(ActionKey.ADD, ActionKey.COMMIT), actions,
+                "PlanBuilder must perform pure 1-to-1 mapping of intents to actions");
     }
 
     @Test
-    void shouldPush_whenPushSelected() {
-        DecisionResult decision = createDecision(ActionKey.PUSH);
-        ExecutionPlan plan = planBuilder.build(decision);
+    void shouldThrowException_whenAutoModeIsMutative() {
+        DecisionResult decision = createDecision(
+            new ModuleIntent(ModuleID.PUSH, Collections.emptySet(), gitv.suggestion.rule.Anchor.PRIMARY, ExecutionMode.AUTO, true)
+        );
 
-        List<ActionKey> actions = extractActions(plan);
-        assertEquals(Collections.singletonList(ActionKey.PUSH), actions,
-                "Clean push intent should strictly map to [PUSH]");
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            planBuilder.build(decision);
+        });
+        
+        assertEquals("DecisionEngine produced invalid ExecutionMode for workflow: AUTO mode cannot be mutative.", exception.getMessage());
     }
 
     @Test
-    void shouldPullThenPush_whenPushBlockedAndNoSelectedAction() {
-        DecisionResult decision = createDecision(ActionKey.NONE, blockedPush());
+    void shouldAllowGuardedMutativeIntent() {
+        DecisionResult decision = createDecision(
+            new ModuleIntent(ModuleID.PUSH, Collections.emptySet(), gitv.suggestion.rule.Anchor.PRIMARY, ExecutionMode.GUARDED, true)
+        );
         ExecutionPlan plan = planBuilder.build(decision);
 
         List<ActionKey> actions = extractActions(plan);
-        assertEquals(Arrays.asList(ActionKey.PULL, ActionKey.PUSH), actions,
-                "Blocked PUSH as fallback should synthesize [PULL, PUSH]");
-    }
-
-    @Test
-    void shouldPullCommitPush_whenCommitSelectedAndPushBlocked() {
-        DecisionResult decision = createDecision(ActionKey.COMMIT, blockedPush());
-        ExecutionPlan plan = planBuilder.build(decision);
-
-        List<ActionKey> actions = extractActions(plan);
-        assertEquals(Arrays.asList(ActionKey.PULL, ActionKey.COMMIT, ActionKey.PUSH), actions,
-                "Blocked PUSH with COMMIT should synthesize [PULL, COMMIT, PUSH]");
-    }
-
-    // --- 🚫 ANTI-BUG TEST ---
-
-    @Test
-    void shouldOnlyPull_whenPullSelectedEvenIfPushBlocked() {
-        DecisionResult decision = createDecision(ActionKey.PULL, blockedPush());
-        ExecutionPlan plan = planBuilder.build(decision);
-
-        List<ActionKey> actions = extractActions(plan);
-        assertEquals(Collections.singletonList(ActionKey.PULL), actions,
-                "PlanBuilder MUST NOT invent a PUSH intent when PULL is natively selected, even if a blocked push exists.");
+        assertEquals(Collections.singletonList(ActionKey.PUSH), actions);
     }
 }
