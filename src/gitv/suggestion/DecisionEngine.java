@@ -6,6 +6,7 @@ import gitv.suggestion.rule.RuleAggregator;
 import gitv.suggestion.rule.RuleResponse;
 import gitv.suggestion.rule.Signal;
 import gitv.suggestion.rule.SignalLayer;
+import gitv.suggestion.rule.Goal;
 import gitv.suggestion.rule.impl.*;
 
 import java.util.ArrayList;
@@ -33,7 +34,7 @@ public class DecisionEngine {
         this.aggregator = new RuleAggregator();
     }
 
-    public DecisionResult decide(RepoContext context) {
+    public DecisionResult decide(RepoContext context, Goal targetGoal) {
         Set<Signal> signals = signalLayer.generateSignals(context);
         
         List<RuleResponse> responses = new ArrayList<>();
@@ -42,9 +43,13 @@ public class DecisionEngine {
             response.ifPresent(responses::add);
         }
 
-        RuleAggregator.AggregationResult result = aggregator.aggregate(responses);
+        RuleAggregator.AggregationResult result = aggregator.aggregate(responses, targetGoal);
 
-        return new DecisionResult(result.getGoal(), result.getIntents(), result.getAppliedRules(), result.getMode());
+        return new DecisionResult(result.getGoal(), result.getIntents(), result.getAppliedRules(), result.getAllAdvisories(), result.getMode(), signals);
+    }
+    
+    public DecisionResult decide(RepoContext context) {
+        return decide(context, null);
     }
 }
 
