@@ -47,6 +47,14 @@ public class CommandRouter {
                 handleWorkflow(args);
                 break;
             }
+            case "unstage": {
+                handleUnstage();
+                break;
+            }
+            case "uncommit": {
+                handleUncommit();
+                break;
+            }
             default:
                 System.out.println("Unknown command");
         }
@@ -107,6 +115,71 @@ public class CommandRouter {
                 System.out.println(Ansi.color("  Suggested Fix: Run `gitv go` to execute ", Ansi.CYAN) + Ansi.bold(advisory.actionableFix().toString()));
             }
             System.out.println();
+        }
+        
+        // Educational Undo Guidance
+        if (git.isHeadMergeCommit()) {
+            System.out.println(Ansi.color("Guide: Gitv detects you are at a merge commit. If you want to cancel the merge, run: ", Ansi.YELLOW) + Ansi.bold("git merge --abort"));
+            System.out.println();
+        }
+        if (context.hasUnpushedCommits()) {
+            System.out.println(Ansi.color("Guide: Gitv detects you have local saves. If you want to safely undo the last save, run: ", Ansi.CYAN) + Ansi.bold("gitv uncommit"));
+            System.out.println();
+        }
+    }
+
+    private void handleUnstage() {
+        GitService git = new GitService();
+        if (!git.isGitRepository()) {
+            System.out.println(Ansi.colorBold("Error: Not a git repository", Ansi.RED));
+            return;
+        }
+        ContextBuilder builder = new ContextBuilder();
+        RepoContext context = builder.build();
+        
+        if (!context.hasStagedChanges()) {
+            System.out.println(Ansi.color("No prepared (staged) files to unstage.", Ansi.GRAY));
+            return;
+        }
+
+        if (git.unstageAll()) {
+            System.out.println(Ansi.colorBold("Success:", Ansi.GREEN) + " You prepared files for saving by mistake. Gitv moved them back to editing mode.");
+        } else {
+            System.out.println(Ansi.colorBold("Error:", Ansi.RED) + " Failed to unstage files.");
+        }
+    }
+
+    private void handleUncommit() {
+        GitService git = new GitService();
+        if (!git.isGitRepository()) {
+            System.out.println(Ansi.colorBold("Error: Not a git repository", Ansi.RED));
+            return;
+        }
+        ContextBuilder builder = new ContextBuilder();
+        RepoContext context = builder.build();
+
+        if (!context.hasUnpushedCommits()) {
+            System.out.println(Ansi.colorBold("Safety Guard Blocked:", Ansi.RED) + " You have no local unpushed saves to undo. We cannot undo pushed work because it modifies team history.");
+            return;
+        }
+
+        if (git.isHeadMergeCommit()) {
+            System.out.println(Ansi.colorBold("Safety Guard Blocked:", Ansi.RED) + " Your last save is a merge commit. Safely undoing a merge requires manual intervention. Run `git reset --merge HEAD~1` if you are sure.");
+            return;
+        }
+
+        System.out.println(Ansi.colorBold("\nWarning: GUARDED MODE: This will rewind your last save.", Ansi.YELLOW));
+        System.out.print(Ansi.bold("Do you want to proceed? [y/N]: "));
+        String answer = scanner.nextLine();
+        if (!answer.trim().equalsIgnoreCase("y") && !answer.trim().equalsIgnoreCase("yes")) {
+            System.out.println(Ansi.color("Aborted.", Ansi.GRAY));
+            return;
+        }
+
+        if (git.uncommit()) {
+            System.out.println(Ansi.colorBold("Success:", Ansi.GREEN) + " Your last save has been reversed. The files are back in your staging area, and no code was lost.");
+        } else {
+            System.out.println(Ansi.colorBold("Error:", Ansi.RED) + " Failed to uncommit.");
         }
     }
 
