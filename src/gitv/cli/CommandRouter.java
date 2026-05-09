@@ -55,18 +55,20 @@ public class CommandRouter {
     private void handleStatus() {
         GitService git = new GitService();
         if (!git.isGitRepository()) {
-            System.out.println("❌ Not a git repository");
+            System.out.println(Ansi.colorBold("Error: Not a git repository", Ansi.RED));
             return;
         }
         ContextBuilder builder = new ContextBuilder();
         RepoContext context = builder.build();
 
-        System.out.println("Unstaged Changes: " + context.hasUnstagedChanges());
-        System.out.println("Staged Changes: " + context.hasStagedChanges());
-        System.out.println("Unpushed Commits: " + context.hasUnpushedCommits());
+        System.out.println(Ansi.bold("Repository Status:"));
+        System.out.println("  Unstaged Changes: " + (context.hasUnstagedChanges() ? Ansi.color("Yes", Ansi.YELLOW) : Ansi.color("No", Ansi.GREEN)));
+        System.out.println("  Staged Changes:   " + (context.hasStagedChanges() ? Ansi.color("Yes", Ansi.CYAN) : Ansi.color("No", Ansi.GRAY)));
+        System.out.println("  Unpushed Commits: " + (context.hasUnpushedCommits() ? Ansi.color("Yes", Ansi.BLUE) : Ansi.color("No", Ansi.GRAY)));
         if (context.isLocked()) {
-            System.out.println("🔒 Repository is LOCKED: " + context.getLockReason());
+            System.out.println(Ansi.colorBold("Repository is LOCKED: " + context.getLockReason(), Ansi.RED));
         }
+        System.out.println();
 
         DecisionEngine engine = new DecisionEngine();
         DecisionResult result = engine.decide(context);
@@ -81,7 +83,7 @@ public class CommandRouter {
     private void handleDoctor() {
         GitService git = new GitService();
         if (!git.isGitRepository()) {
-            System.out.println("❌ Not a git repository");
+            System.out.println(Ansi.colorBold("Error: Not a git repository", Ansi.RED));
             return;
         }
         ContextBuilder builder = new ContextBuilder();
@@ -92,15 +94,17 @@ public class CommandRouter {
 
         List<gitv.workflow.Advisory> advisories = result.getAllAdvisories();
         if (advisories == null || advisories.isEmpty()) {
-            System.out.println("✅ Repository is healthy. No issues detected.");
+            System.out.println(Ansi.colorBold("Repository is healthy. No issues detected.", Ansi.GREEN));
             return;
         }
 
-        System.out.println("🏥 Gitv Doctor Report:\n");
+        System.out.println(Ansi.bold("Gitv Doctor Report:"));
+        System.out.println(Ansi.color("======================", Ansi.GRAY));
         for (gitv.workflow.Advisory advisory : advisories) {
-            System.out.println("- [" + advisory.severity() + "] " + advisory.message());
+            String sevColor = advisory.severity() == gitv.workflow.Severity.DANGER ? Ansi.RED : Ansi.YELLOW;
+            System.out.println(Ansi.colorBold("- [" + advisory.severity() + "] ", sevColor) + advisory.message());
             if (advisory.actionableFix() != null && advisory.actionableFix() != ActionKey.NONE) {
-                System.out.println("  💡 Suggested Fix: Run `gitv go` to execute " + advisory.actionableFix());
+                System.out.println(Ansi.color("  Suggested Fix: Run `gitv go` to execute ", Ansi.CYAN) + Ansi.bold(advisory.actionableFix().toString()));
             }
             System.out.println();
         }
@@ -130,7 +134,7 @@ public class CommandRouter {
         DecisionEngine engine = new DecisionEngine();
         GitService git = new GitService();
         if (!git.isGitRepository()) {
-            System.out.println("❌ Not a git repository");
+            System.out.println(Ansi.colorBold("Error: Not a git repository", Ansi.RED));
             return;
         }
 
@@ -142,7 +146,7 @@ public class CommandRouter {
             gitv.engine.ExecutionState state = stateManager.loadState();
             if (state != null && state.getPlannedActions() != null && state.getCompletedSteps().size() < state.getPlannedActions().size()) {
                 if (currentHash.equals(state.getInitialHeadHash())) {
-                    System.out.print("\n⚠️ Found an interrupted execution plan. Resume? (y/n) ");
+                    System.out.print(Ansi.colorBold("\nWarning: Found an interrupted execution plan. Resume? [y/N]: ", Ansi.YELLOW));
                     String answer = scanner.nextLine();
                     if (answer.trim().equalsIgnoreCase("y")) {
                         recoveredState = state;
@@ -150,7 +154,7 @@ public class CommandRouter {
                         stateManager.clearState();
                     }
                 } else {
-                    System.out.println("⚠️ Repository state changed since last crash. Discarding old state.");
+                    System.out.println(Ansi.color("Warning: Repository state changed since last crash. Discarding old state.", Ansi.YELLOW));
                     stateManager.clearState();
                 }
             } else {
@@ -197,39 +201,39 @@ public class CommandRouter {
 
         if (!isApply) {
             printPlan(plan);
-            System.out.println("\n[DRY RUN] Run with `--apply` to execute.");
+            System.out.println(Ansi.color("\n[DRY RUN] Run with `--apply` to execute.", Ansi.YELLOW));
             return;
         }
 
         List<ExecutionStep> steps = plan.getSteps();
         if (steps == null || steps.isEmpty() || steps.get(0).getAction() == ActionKey.NONE) {
-            System.out.println("No actions required.");
+            System.out.println(Ansi.color("No actions required.", Ansi.GRAY));
             return;
         }
 
         if (plan.getMode() == gitv.workflow.ExecutionMode.INTERACTIVE) {
-            System.out.println("\n⚠️  INTERACTIVE MODE: Gitv will yield terminal control for manual intervention.");
+            System.out.println(Ansi.colorBold("\nWarning: INTERACTIVE MODE: Gitv will yield terminal control for manual intervention.", Ansi.YELLOW));
         } else if (plan.getMode() == gitv.workflow.ExecutionMode.GUARDED) {
-            System.out.println("\n⚠️  GUARDED MODE: This plan mutates repository state and may halt midway.");
-            System.out.print("Do you want to proceed? Type 'yes' to confirm: ");
+            System.out.println(Ansi.colorBold("\nWarning: GUARDED MODE: This plan mutates repository state and may halt midway.", Ansi.YELLOW));
+            System.out.print(Ansi.bold("Do you want to proceed? [y/N]: "));
             String answer = scanner.nextLine();
-            if (!answer.trim().equalsIgnoreCase("yes")) {
-                System.out.println("Aborted.");
+            if (!answer.trim().equalsIgnoreCase("y") && !answer.trim().equalsIgnoreCase("yes")) {
+                System.out.println(Ansi.color("Aborted.", Ansi.GRAY));
                 return;
             }
             context = builder.build();
         } else if (isConfirm) {
-            System.out.print("\nDo you want to run the execution plan? (y/n) ");
+            System.out.print(Ansi.bold("\nDo you want to run the execution plan? [y/N]: "));
             String answer = scanner.nextLine();
-            if (!answer.trim().equalsIgnoreCase("y")) {
-                System.out.println("Aborted.");
+            if (!answer.trim().equalsIgnoreCase("y") && !answer.trim().equalsIgnoreCase("yes")) {
+                System.out.println(Ansi.color("Aborted.", Ansi.GRAY));
                 return;
             }
             context = builder.build();
         }
 
         if (!safetyResult.isSafe()) {
-            System.out.println("\n❌ Safety Guard: Cannot execute plan. Reason: " + safetyResult.getMessage());
+            System.out.println(Ansi.colorBold("\nSafety Guard Blocked: Cannot execute plan. Reason: ", Ansi.RED) + safetyResult.getMessage());
             return;
         }
 
@@ -240,78 +244,97 @@ public class CommandRouter {
 
         WorkflowResult result = executionEngine.execute(plan, context, executionId, logFile, stateManager, recoveredState, currentHash);
         if (result.isSuccess()) {
-            System.out.println("✅ " + result.getMessage());
+            System.out.println(Ansi.colorBold("Success: " + result.getMessage(), Ansi.GREEN));
         } else {
-            System.out.println("❌ Execution Failed: " + result.getMessage());
-            System.out.println("   (Check .git/gitv/execution.log for full details)");
+            System.out.println(Ansi.colorBold("Execution Failed: ", Ansi.RED) + result.getMessage());
+            System.out.println(Ansi.color("   (Check .git/gitv/execution.log for full details)", Ansi.GRAY));
             
-            System.out.println("\n🔄 Re-evaluating repository state for recovery guidance...");
+            System.out.println(Ansi.color("\nRe-evaluating repository state for recovery guidance...", Ansi.CYAN));
             context = builder.build();
             DecisionResult recoveryDecision = engine.decide(context);
             
             if (recoveryDecision != null && !recoveryDecision.getAllAdvisories().isEmpty()) {
-                System.out.println("\n💡 Suggested Fix (Goal: " + recoveryDecision.getGoal() + "):");
+                System.out.println(Ansi.bold("\nSuggested Fix (Goal: " + recoveryDecision.getGoal() + "):"));
                 for (gitv.workflow.Advisory advisory : recoveryDecision.getAllAdvisories()) {
                     System.out.println("- [" + advisory.severity() + "] " + advisory.message());
                     if (advisory.actionableFix() != null && advisory.actionableFix() != ActionKey.NONE) {
-                        System.out.println("  Action: run `gitv go` to execute " + advisory.actionableFix());
+                        System.out.println(Ansi.color("  Action: run `gitv go` to execute ", Ansi.CYAN) + Ansi.bold(advisory.actionableFix().toString()));
                     }
                 }
             } else {
-                System.out.println("\nNo automatic recovery suggestions available.");
+                System.out.println(Ansi.color("\nNo automatic recovery suggestions available.", Ansi.GRAY));
             }
         }
     }
 
     private void printExplanation(DecisionResult result, gitv.workflow.ExecutionPlan plan, SafetyResult safetyResult) {
-        System.out.println("🔍 Execution Explanation\n");
+        System.out.println(Ansi.bold("\n--- Execution Explanation ---------------------------"));
         
-        System.out.println("🎯 Goal: " + result.getGoal());
+        System.out.println("  " + Ansi.bold("Goal:") + " " + Ansi.colorBold(result.getGoal().toString(), Ansi.CYAN));
         
-        System.out.println("\n📡 Signals Detected:");
+        System.out.println();
+        System.out.println("  " + Ansi.bold("Signals Detected:"));
         if (result.getSignals() != null && !result.getSignals().isEmpty()) {
             for (gitv.suggestion.rule.Signal signal : result.getSignals()) {
-                System.out.println("  - " + signal);
+                System.out.println("    " + Ansi.color("- ", Ansi.GRAY) + signal);
             }
         } else {
-            System.out.println("  - None");
+            System.out.println("    " + Ansi.color("- None", Ansi.GRAY));
         }
 
-        System.out.println("\n📋 Plan:");
-        printPlan(plan);
+        System.out.println();
+        System.out.println("  " + Ansi.bold("Plan:"));
+        List<ExecutionStep> steps = plan.getSteps();
+        if (steps == null || steps.isEmpty()) {
+            System.out.println("    " + Ansi.color("- NONE (No action required)", Ansi.GRAY));
+        } else {
+            for (int i = 0; i < steps.size(); i++) {
+                System.out.println("    " + Ansi.color((i + 1) + ".", Ansi.GRAY) + " " + Ansi.bold(steps.get(i).getAction().toString()));
+            }
+        }
 
-        System.out.println("🧠 Reasoning:");
+        System.out.println();
+        System.out.println("  " + Ansi.bold("Reasoning:"));
         if (result.getAppliedRules() != null && !result.getAppliedRules().isEmpty()) {
             for (gitv.suggestion.rule.RuleResponse rule : result.getAppliedRules()) {
-                System.out.println("  - " + rule.getAdvisory().message());
+                System.out.println("    " + Ansi.color("- ", Ansi.GRAY) + rule.getAdvisory().message());
             }
         } else {
-            System.out.println("  - No specific rules applied.");
+            System.out.println("    " + Ansi.color("- No specific rules applied.", Ansi.GRAY));
         }
 
-        System.out.println("\n⚠️ Risk Assessment:");
-        System.out.println("  - Level: " + safetyResult.getRiskLevel());
-        if (!safetyResult.isSafe()) {
-            System.out.println("  - 🛑 BLOCKED: " + safetyResult.getMessage());
+        System.out.println();
+        System.out.println("  " + Ansi.bold("Risk Assessment:"));
+        String riskColor = Ansi.GREEN;
+        if (safetyResult.getRiskLevel() == gitv.workflow.RiskLevel.HIGH || safetyResult.getRiskLevel() == gitv.workflow.RiskLevel.CRITICAL) {
+            riskColor = Ansi.RED;
+        } else if (safetyResult.getRiskLevel() == gitv.workflow.RiskLevel.MEDIUM) {
+            riskColor = Ansi.YELLOW;
         }
+        System.out.println("    " + Ansi.color("Level: ", Ansi.GRAY) + Ansi.colorBold(safetyResult.getRiskLevel().toString(), riskColor));
+        if (!safetyResult.isSafe()) {
+            System.out.println("    " + Ansi.colorBold("BLOCKED: ", Ansi.RED) + safetyResult.getMessage());
+        }
+        System.out.println(Ansi.bold("-----------------------------------------------------\n"));
     }
 
     private void printPlan(gitv.workflow.ExecutionPlan plan) {
         List<ExecutionStep> steps = plan.getSteps();
         
         if (steps == null || steps.isEmpty()) {
-            System.out.println("Execution Plan:\n- NONE (No action required)");
+            System.out.println(Ansi.bold("Execution Plan:"));
+            System.out.println("  " + Ansi.color("NONE (No action required)", Ansi.GRAY));
             return;
         }
 
-        System.out.println("Execution Plan:");
+        System.out.println(Ansi.bold("Execution Plan:"));
         for (int i = 0; i < steps.size(); i++) {
             ExecutionStep step = steps.get(i);
-            System.out.println((i + 1) + ". " + step.getAction().toString());
+            System.out.println("  " + Ansi.colorBold("[ ] ", Ansi.CYAN) + Ansi.bold(step.getAction().toString()));
             List<String> reasons = step.getReasons();
             if (reasons != null && !reasons.isEmpty()) {
                 for (String reason : reasons) {
-                    System.out.println("   - " + reason);
+                    System.out.println(Ansi.color("      ↳ " + reason, Ansi.GRAY));
                 }
             }
             if (i < steps.size() - 1) {
@@ -324,10 +347,10 @@ public class CommandRouter {
         if (decisionResult == null || decisionResult.getAppliedRules() == null || decisionResult.getAppliedRules().isEmpty()) {
             return;
         }
-        System.out.println("\nReasoning (Goal: " + decisionResult.getGoal() + "):");
+        System.out.println(Ansi.bold("\nReasoning ") + Ansi.color("(Goal: " + decisionResult.getGoal() + "):", Ansi.GRAY));
         for (gitv.suggestion.rule.RuleResponse rule : decisionResult.getAppliedRules()) {
-            System.out.println("- [" + rule.getTier() + "] " + rule.getModule() + " (Score: " + rule.getScore() + ")");
-            System.out.println("    * " + rule.getAdvisory().message());
+            System.out.println("  " + Ansi.colorBold("• ", Ansi.BLUE) + rule.getAdvisory().message());
+            System.out.println(Ansi.color("    [" + rule.getTier() + "] " + rule.getModule() + " (Score: " + rule.getScore() + ")", Ansi.GRAY));
         }
     }
 }

@@ -49,7 +49,7 @@ public class ExecutionLogger {
     }
 
     public void logStart(ActionKey action) {
-        String msg = String.format("%s▶%s %s%s%s", BLUE, RESET, BOLD, action, RESET);
+        String msg = String.format("%s>%s %s%s%s", BLUE, RESET, BOLD, action, RESET);
         System.out.println(msg);
         appendToFile(String.format("Executing Step: %s", action));
     }
@@ -58,9 +58,9 @@ public class ExecutionLogger {
         this.totalSteps++;
         String msg;
         if (debugMode && message != null && !message.isEmpty()) {
-            msg = String.format("   %s✓%s Success - %s", GREEN, RESET, message);
+            msg = String.format("   %sOK%s Success - %s", GREEN, RESET, message);
         } else {
-            msg = String.format("   %s✓%s Success", GREEN, RESET);
+            msg = String.format("   %sOK%s Success", GREEN, RESET);
         }
         System.out.println(msg);
         appendToFile(String.format("Step %s Status: Success%s", action, (message != null && !message.isEmpty() ? " - " + message : "")));
@@ -68,20 +68,20 @@ public class ExecutionLogger {
 
     public void logFailure(ActionKey action, FailureCategory type, String message) {
         String color = (type == FailureCategory.FATAL_ERROR) ? RED : YELLOW;
-        String msg = String.format("   %s✗%s %s[%s]%s Failed: %s", color, RESET, color, type, RESET, message);
+        String msg = String.format("   %sERR%s %s[%s]%s Failed: %s", color, RESET, color, type, RESET, message);
         System.out.println(msg);
         appendToFile(String.format("Step %s Status: Failed [%s] - %s", action, type, message));
     }
 
     public void logRetry(ActionKey action, int attempt, long delayMs) {
         this.totalRetries++;
-        String msg = String.format("   %s↻%s Retrying in %dms (Attempt %d)...", YELLOW, RESET, delayMs, attempt);
+        String msg = String.format("   %sRETRY%s Retrying in %dms (Attempt %d)...", YELLOW, RESET, delayMs, attempt);
         System.out.println(msg);
         appendToFile(String.format("Retrying %s in %dms (Attempt %d)", action, delayMs, attempt));
     }
 
     public void logRecoveryInjection(ActionKey failedAction, ActionKey recoveryAction) {
-        String msg = String.format("   %s↳%s Injecting recovery action: %s%s", CYAN, RESET, BOLD, recoveryAction, RESET);
+        String msg = String.format("   %s->%s Injecting recovery action: %s%s", CYAN, RESET, BOLD, recoveryAction, RESET);
         System.out.println(msg);
         appendToFile(String.format("Injecting recovery action %s for %s", recoveryAction, failedAction));
     }
