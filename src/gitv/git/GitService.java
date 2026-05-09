@@ -192,4 +192,25 @@ public class GitService {
         CommandResult result = runCommand("git", "add", ".");
         return result.isSuccess();
     }
+
+    public boolean unstageAll() {
+        CommandResult result = runCommand("git", "reset", "HEAD");
+        return result.isSuccess();
+    }
+
+    public boolean uncommit() {
+        CommandResult result = runCommand("git", "reset", "--soft", "HEAD~1");
+        return result.isSuccess();
+    }
+
+    public boolean isHeadMergeCommit() {
+        CommandResult result = runCommand("git", "rev-list", "--parents", "-n", "1", "HEAD");
+        if (result.isSuccess() && result.output != null) {
+            String[] parts = result.output.trim().split("\\s+");
+            // Format: <commit_hash> <parent1_hash> [<parent2_hash>...]
+            // If there are more than 2 parts (1 commit + >= 2 parents), it's a merge commit.
+            return parts.length > 2;
+        }
+        return false;
+    }
 }
