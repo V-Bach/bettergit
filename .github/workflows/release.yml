@@ -1,0 +1,68 @@
+name: Release Gitv
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on tags like v1.0.0
+
+jobs:
+  build-native:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: gitv
+            asset_name: gitv-linux-amd64
+            archive_name: gitv-linux-amd64.tar.gz
+          - os: macos-latest
+            artifact_name: gitv
+            asset_name: gitv-darwin-arm64
+            archive_name: gitv-darwin-arm64.tar.gz
+          - os: macos-13
+            artifact_name: gitv
+            asset_name: gitv-darwin-amd64
+            archive_name: gitv-darwin-amd64.tar.gz
+          - os: windows-latest
+            artifact_name: gitv.exe
+            asset_name: gitv-windows-amd64.exe
+            archive_name: gitv-windows-amd64.zip
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Microsoft Visual C++ Build Tools (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '17'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: 'maven'
+
+      - name: Build Native Image
+        run: ./mvnw -B -Pnative clean package -DskipTests
+        
+      - name: Prepare Asset (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x target/${{ matrix.artifact_name }}
+          mv target/${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+          tar -czvf ${{ matrix.archive_name }} ${{ matrix.asset_name }}
+          
+      - name: Prepare Asset (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          move target\${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+          Compress-Archive -Path ${{ matrix.asset_name }} -DestinationPath ${{ matrix.archive_name }}
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ matrix.archive_name }}
+          generate_release_notes: true

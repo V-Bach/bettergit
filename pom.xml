@@ -6,7 +6,7 @@
 
     <groupId>com.vbach</groupId>
     <artifactId>gitv</artifactId>
-    <version>1.0.0</version>
+    <version>0.9.0-rc1</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -66,4 +66,42 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>0.10.1</version>
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>build-native</id>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <mainClass>gitv.cli.GitvRootCmd</mainClass>
+                            <imageName>gitv</imageName>
+                            <fallback>false</fallback>
+                            <verbose>true</verbose>
+                            <buildArgs>
+                                <arg>--no-fallback</arg>
+                                <!-- Optional: Optimization level -->
+                                <arg>-O2</arg>
+                                <!-- Optional: Disable assertions -->
+                                <arg>-da</arg>
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
