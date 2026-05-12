@@ -2,7 +2,6 @@ package gitv.workflow;
 
 import gitv.engine.ActionKey;
 import gitv.suggestion.DecisionResult;
-import gitv.suggestion.rule.RuleResponse;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,7 +19,8 @@ public class PlanBuilder {
 
         for (ModuleIntent intent : decision.getIntents()) {
             if (intent.getMode() == gitv.workflow.ExecutionMode.AUTO && intent.isMutative()) {
-                throw new IllegalStateException("DecisionEngine produced invalid ExecutionMode for workflow: AUTO mode cannot be mutative.");
+                throw new IllegalStateException(
+                        "DecisionEngine produced invalid ExecutionMode for workflow: AUTO mode cannot be mutative.");
             }
 
             List<String> reasons = decision.getAppliedRules().stream()
