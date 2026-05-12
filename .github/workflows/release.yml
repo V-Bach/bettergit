@@ -23,10 +23,6 @@ jobs:
             artifact_name: gitv
             asset_name: gitv-darwin-arm64
             archive_name: gitv-darwin-arm64.tar.gz
-          - os: macos-13
-            artifact_name: gitv
-            asset_name: gitv-darwin-amd64
-            archive_name: gitv-darwin-amd64.tar.gz
           - os: windows-latest
             artifact_name: gitv.exe
             asset_name: gitv-windows-amd64.exe
