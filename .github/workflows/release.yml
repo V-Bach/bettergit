@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*' # Trigger on tags like v1.0.0
 
+permissions:
+  contents: write
+
 jobs:
   build-native:
     name: Build on ${{ matrix.os }}
@@ -46,7 +49,10 @@ jobs:
           cache: 'maven'
 
       - name: Build Native Image
-        run: ./mvnw -B -Pnative clean package -DskipTests
+        run: |
+          if [ "$RUNNER_OS" != "Windows" ]; then chmod +x mvnw; fi
+          ./mvnw -B -Pnative clean package -DskipTests
+        shell: bash
         
       - name: Prepare Asset (Unix)
         if: runner.os != 'Windows'

@@ -22,7 +22,10 @@ jobs:
         cache: 'maven'
         
     - name: Build Fat JAR
-      run: ./mvnw -B clean package
+      run: |
+        chmod +x mvnw
+        ./mvnw -B clean package
+      shell: bash
       
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
