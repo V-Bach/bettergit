@@ -54,3 +54,12 @@ build/
 
 test.txt
 sources.txt
+
+# Local Maven Download
+apache-maven/
+
+# Local Testing Archives
+*.zip
+*.tar.gz
+*.exe
+*.jar
