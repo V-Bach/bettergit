@@ -1,0 +1,26 @@
+{
+  "version": "0.9.0-rc1",
+  "description": "Autonomous Git workflow engine.",
+  "homepage": "https://github.com/V-Bach/bettergit",
+  "license": "MIT",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/V-Bach/bettergit/releases/download/v0.9.0-rc1/gitv-windows-amd64.zip",
+      "hash": "REPLACE_WITH_ACTUAL_SHA256",
+      "bin": [
+        [
+          "gitv-windows-amd64.exe",
+          "gitv"
+        ]
+      ]
+    }
+  },
+  "checkver": "github",
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/V-Bach/bettergit/releases/download/v$version/gitv-windows-amd64.zip"
+      }
+    }
+  }
+}
