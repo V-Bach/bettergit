@@ -7,7 +7,7 @@ import picocli.CommandLine.ScopeType;
 
 import java.util.concurrent.Callable;
 
-@Command(name = "gitv", mixinStandardHelpOptions = true, version = "0.9.0-rc1",
+@Command(name = "gitv", mixinStandardHelpOptions = true, version = "0.9.0-rc2",
          description = "Autonomous Git workflow engine.",
          subcommands = {
              SyncCmd.class,
