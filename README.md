@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
-  <a href="https://www.npmjs.com/package/gitv"><img src="https://img.shields.io/npm/v/gitv" alt="NPM Version"></a>
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
   <a href="https://brew.sh"><img src="https://img.shields.io/badge/homebrew-supported-orange.svg" alt="Homebrew"></a>
 </p>
 
