@@ -1,15 +1,11 @@
 <p align="center">
   <a href="https://github.com/V-Bach/bettergit">
-    <picture>
-      <source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)">
-      <source srcset="assets/logo-light.svg" media="(prefers-color-scheme: light)">
-      <img src="assets/logo-light.svg" alt="Gitv logo">
-    </picture>
+    <img src="assets/gitvlogo.png" alt="Gitv logo">
   </a>
 </p>
 <p align="center">The smart, safe, and automated Git workflow CLI.</p>
 
-[![Gitv Terminal UI](assets/screenshot.png)](https://github.com/V-Bach/bettergit)
+[![Gitv Terminal UI](assets/gitvcli.png)](https://github.com/V-Bach/bettergit)
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
@@ -51,11 +47,11 @@ That's it. Gitv will analyze the repository context, determine what needs to be 
 
 ### Features
 
-- 🧠 **Context-Aware Routing:** Intelligently detects if you need to commit, pull, push, stash, or resolve conflicts.
-- 🛡️ **Predictive Safety Validator:** Simulates operations before executing them to ensure your repository never ends up in a corrupted state.
-- 🚦 **Rich, Readable UI:** Color-coded, emoji-free, professional terminal diagnostics that show exactly what’s happening.
-- 🔄 **Resilient Crash Recovery:** Interrupt a sync? Gitv knows where it left off and safely resumes the operation.
-- 🛑 **Zero Implicit Commits:** Never automatically stages all files. Gitv respects what you explicitly added to the index.
+- **Context-Aware Routing:** Intelligently detects if you need to commit, pull, push, stash, or resolve conflicts.
+- **Predictive Safety Validator:** Simulates operations before executing them to ensure your repository never ends up in a corrupted state.
+- **Rich, Readable UI:** Color-coded, emoji-free, professional terminal diagnostics that show exactly what’s happening.
+- **Resilient Crash Recovery:** Interrupt a sync? Gitv knows where it left off and safely resumes the operation.
+- **Zero Implicit Commits:** Never automatically stages all files. Gitv respects what you explicitly added to the index.
 
 ### Architecture & Philosophy
 
@@ -65,7 +61,7 @@ Instead of nested branching logic, Gitv translates repository state signals into
 
 ### Documentation
 
-Full documentation, including advanced configuration, CI/CD usage, and manual command overrides, will be available soon in our `docs/` directory.
+For more info on how to configure Gitv in our `docs/` directory.
 
 ### Contributing
 
