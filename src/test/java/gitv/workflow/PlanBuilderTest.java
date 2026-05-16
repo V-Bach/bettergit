@@ -57,8 +57,8 @@ class PlanBuilderTest {
     @Test
     void shouldMapIntentsDirectlyToActions() {
         DecisionResult decision = createDecision(
-            new ModuleIntent(ModuleID.STAGE, Collections.emptySet(), gitv.suggestion.rule.Anchor.PRE, ExecutionMode.AUTO, false),
-            new ModuleIntent(ModuleID.COMMIT, Collections.emptySet(), gitv.suggestion.rule.Anchor.PRIMARY, ExecutionMode.AUTO, false)
+            new ModuleIntent(ModuleID.STAGE, Collections.emptySet(), gitv.workflow.Anchor.PRE_COMMIT, ExecutionMode.AUTO, false),
+            new ModuleIntent(ModuleID.COMMIT, Collections.emptySet(), gitv.workflow.Anchor.COMMIT, ExecutionMode.AUTO, false)
         );
         ExecutionPlan plan = planBuilder.build(decision);
 
@@ -70,7 +70,7 @@ class PlanBuilderTest {
     @Test
     void shouldThrowException_whenAutoModeIsMutative() {
         DecisionResult decision = createDecision(
-            new ModuleIntent(ModuleID.PUSH, Collections.emptySet(), gitv.suggestion.rule.Anchor.PRIMARY, ExecutionMode.AUTO, true)
+            new ModuleIntent(ModuleID.PUSH, Collections.emptySet(), gitv.workflow.Anchor.COMMIT, ExecutionMode.AUTO, true)
         );
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
@@ -83,7 +83,7 @@ class PlanBuilderTest {
     @Test
     void shouldAllowGuardedMutativeIntent() {
         DecisionResult decision = createDecision(
-            new ModuleIntent(ModuleID.PUSH, Collections.emptySet(), gitv.suggestion.rule.Anchor.PRIMARY, ExecutionMode.GUARDED, true)
+            new ModuleIntent(ModuleID.PUSH, Collections.emptySet(), gitv.workflow.Anchor.COMMIT, ExecutionMode.GUARDED, true)
         );
         ExecutionPlan plan = planBuilder.build(decision);
 

@@ -1,6 +1,6 @@
 {
   "name": "@vuthebach/gitv-cli",
-  "version": "0.9.0-rc2",
+  "version": "0.9.0",
   "description": "Autonomous Git workflow engine",
   "bin": {
     "gitv": "bin/gitv.js"
