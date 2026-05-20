@@ -6,7 +6,7 @@ REPO="V-Bach/bettergit"
 # Try to get the latest release tag. If it fails (e.g., only pre-releases exist), fallback to hardcoded.
 VERSION=$(curl -sL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 if [ -z "$VERSION" ] || [ "$VERSION" == "null" ]; then
-    VERSION="v0.9.0-rc1"
+    VERSION="v0.9.0"
 fi
 
 OS="$(uname -s)"
