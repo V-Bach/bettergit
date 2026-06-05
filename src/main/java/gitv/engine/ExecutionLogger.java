@@ -24,6 +24,14 @@ public class ExecutionLogger {
     private static final String CYAN = "\u001B[36m";
     private static final String BOLD = "\u001B[1m";
 
+    // Emoji constants
+    private static final String EMOJI_ROCKET = "🚀";
+    private static final String EMOJI_SUCCESS = "✅";
+    private static final String EMOJI_FAILURE = "❌";
+    private static final String EMOJI_RETRY = "⏳";
+    private static final String EMOJI_RECOVERY = "🩹";
+    private static final String EMOJI_DEBUG = "🐛";
+
     public ExecutionLogger(boolean debugMode, String executionId, File logFile) {
         this.debugMode = debugMode;
         this.startTime = System.currentTimeMillis();
@@ -49,7 +57,7 @@ public class ExecutionLogger {
     }
 
     public void logStart(ActionKey action) {
-        String msg = String.format("%s>%s %s%s%s", BLUE, RESET, BOLD, action, RESET);
+        String msg = String.format("%s%s%s %s%s%s", BLUE, EMOJI_ROCKET, RESET, BOLD, action, RESET);
         System.out.println(msg);
         appendToFile(String.format("Executing Step: %s", action));
     }
@@ -58,9 +66,9 @@ public class ExecutionLogger {
         this.totalSteps++;
         String msg;
         if (debugMode && message != null && !message.isEmpty()) {
-            msg = String.format("   %sOK%s Success - %s", GREEN, RESET, message);
+            msg = String.format("   %s%s%s Success - %s", GREEN, EMOJI_SUCCESS, RESET, message);
         } else {
-            msg = String.format("   %sOK%s Success", GREEN, RESET);
+            msg = String.format("   %s%s%s Success", GREEN, EMOJI_SUCCESS, RESET);
         }
         System.out.println(msg);
         appendToFile(String.format("Step %s Status: Success%s", action, (message != null && !message.isEmpty() ? " - " + message : "")));
@@ -68,27 +76,27 @@ public class ExecutionLogger {
 
     public void logFailure(ActionKey action, FailureCategory type, String message) {
         String color = (type == FailureCategory.FATAL_ERROR) ? RED : YELLOW;
-        String msg = String.format("   %sERR%s %s[%s]%s Failed: %s", color, RESET, color, type, RESET, message);
+        String msg = String.format("   %s%s%s %s[%s]%s Failed: %s", color, EMOJI_FAILURE, RESET, color, type, RESET, message);
         System.out.println(msg);
         appendToFile(String.format("Step %s Status: Failed [%s] - %s", action, type, message));
     }
 
     public void logRetry(ActionKey action, int attempt, long delayMs) {
         this.totalRetries++;
-        String msg = String.format("   %sRETRY%s Retrying in %dms (Attempt %d)...", YELLOW, RESET, delayMs, attempt);
+        String msg = String.format("   %s%s%s Retrying in %dms (Attempt %d)...", YELLOW, EMOJI_RETRY, RESET, delayMs, attempt);
         System.out.println(msg);
         appendToFile(String.format("Retrying %s in %dms (Attempt %d)", action, delayMs, attempt));
     }
 
     public void logRecoveryInjection(ActionKey failedAction, ActionKey recoveryAction) {
-        String msg = String.format("   %s->%s Injecting recovery action: %s%s", CYAN, RESET, BOLD, recoveryAction, RESET);
+        String msg = String.format("   %s%s%s Injecting recovery action: %s%s", CYAN, EMOJI_RECOVERY, RESET, BOLD, recoveryAction, RESET);
         System.out.println(msg);
         appendToFile(String.format("Injecting recovery action %s for %s", recoveryAction, failedAction));
     }
 
     public void logDebug(String message) {
         if (debugMode) {
-            String msg = String.format("   %s[DEBUG]%s %s", CYAN, RESET, message);
+            String msg = String.format("   %s%s [DEBUG]%s %s", CYAN, EMOJI_DEBUG, RESET, message);
             System.out.println(msg);
         }
         appendToFile(String.format("[DEBUG] %s", message));
@@ -97,14 +105,18 @@ public class ExecutionLogger {
     public void logFinalSummary(boolean isSuccess, String resultMessage) {
         long duration = System.currentTimeMillis() - startTime;
         String headerColor = isSuccess ? GREEN : RED;
+        String emoji = isSuccess ? "🎉" : "💥";
         
         System.out.println();
-        System.out.println(headerColor + "=== Execution Summary ===" + RESET);
-        System.out.println("Result   : " + (isSuccess ? "Success" : "Failed") + " (" + resultMessage + ")");
-        System.out.println("Duration : " + duration + "ms");
-        System.out.println("Steps    : " + totalSteps + " successful steps");
-        System.out.println("Retries  : " + totalRetries);
-        System.out.println(headerColor + "=========================" + RESET);
+        System.out.println(headerColor + "╔══════════════════════════════════════════╗" + RESET);
+        System.out.println(headerColor + "║ " + emoji + " Execution Summary                      ║" + RESET);
+        System.out.println(headerColor + "╠══════════════════════════════════════════╣" + RESET);
+        System.out.printf(headerColor + "║ Result   : %-29s ║" + RESET + "%n", (isSuccess ? "Success" : "Failed"));
+        System.out.printf(headerColor + "║ Details  : %-29s ║" + RESET + "%n", (resultMessage != null && resultMessage.length() > 29 ? resultMessage.substring(0, 26) + "..." : resultMessage));
+        System.out.printf(headerColor + "║ Duration : %-29s ║" + RESET + "%n", duration + "ms");
+        System.out.printf(headerColor + "║ Steps    : %-29s ║" + RESET + "%n", totalSteps + " successful steps");
+        System.out.printf(headerColor + "║ Retries  : %-29s ║" + RESET + "%n", totalRetries);
+        System.out.println(headerColor + "╚══════════════════════════════════════════╝" + RESET);
 
         appendToFile(String.format("Pipeline Finished - Result: %s (%s), Duration: %dms", 
                      (isSuccess ? "Success" : "Failed"), resultMessage, duration));
