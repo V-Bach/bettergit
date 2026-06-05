@@ -6,7 +6,7 @@
 
     <groupId>com.vbach</groupId>
     <artifactId>gitv</artifactId>
-    <version>0.9.0</version>
+    <version>0.9.1</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

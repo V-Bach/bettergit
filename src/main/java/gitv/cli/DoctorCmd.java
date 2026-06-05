@@ -11,6 +11,7 @@ import gitv.workflow.Severity;
 import picocli.CommandLine.Command;
 
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.Callable;
 
 @Command(name = "doctor", description = "Diagnose repository issues and suggest fixes.")
@@ -37,11 +38,13 @@ public class DoctorCmd implements Callable<Integer> {
 
         System.out.println(Ansi.bold("Gitv Doctor Report:"));
         System.out.println(Ansi.color("======================", Ansi.GRAY));
+        boolean hasActionableFixes = false;
         for (Advisory advisory : advisories) {
             String sevColor = advisory.severity() == Severity.DANGER ? Ansi.RED : Ansi.YELLOW;
             System.out.println(Ansi.colorBold("- [" + advisory.severity() + "] ", sevColor) + advisory.message());
             if (advisory.actionableFix() != null && advisory.actionableFix() != ActionKey.NONE) {
                 System.out.println(Ansi.color("  Suggested Fix: Run `gitv go` to execute ", Ansi.CYAN) + Ansi.bold(advisory.actionableFix().toString()));
+                hasActionableFixes = true;
             }
             System.out.println();
         }
@@ -55,6 +58,18 @@ public class DoctorCmd implements Callable<Integer> {
             System.out.println(Ansi.color("Guide: Gitv detects you have local saves. If you want to safely undo the last save, run: ", Ansi.CYAN) + Ansi.bold("gitv uncommit"));
             System.out.println();
         }
+
+        if (hasActionableFixes) {
+            System.out.print(Ansi.bold("\nWould you like Gitv to automatically apply the suggested fixes? [y/N]: "));
+            Scanner scanner = new Scanner(System.in);
+            String answer = scanner.nextLine();
+            if (answer.trim().equalsIgnoreCase("y") || answer.trim().equalsIgnoreCase("yes")) {
+                System.out.println(Ansi.color("Applying fixes...", Ansi.CYAN));
+                WorkflowRunner runner = new WorkflowRunner(EngineFactory.create());
+                return runner.run(result.getGoal(), true, false, false);
+            }
+        }
+        
         return 0;
     }
 }

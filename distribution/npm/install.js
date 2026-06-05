@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VERSION = 'v0.9.0';
+const VERSION = 'v0.9.1';
 const REPO = 'V-Bach/bettergit';
 
 const platform = os.platform();
